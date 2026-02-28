@@ -4,8 +4,7 @@
 
 No app install. No sign-up. Just scan, drop, and win.
 
-[![Watch the demo](docs/screenshots/gameplay.png)](https://youtu.be/HpCjDPk2bnw)
-*Click to watch the demo*
+**[Watch the demo on YouTube](https://youtu.be/HpCjDPk2bnw)**
 
 | Lobby | Gameplay | Final Round |
 |:---:|:---:|:---:|
