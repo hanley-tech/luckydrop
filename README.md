@@ -218,6 +218,20 @@ For deploying to a remote server via SSH and PM2, configure the `DEPLOY_*` varia
 ./deploy.sh
 ```
 
+## Hosting for Free
+
+LuckyDrop requires a **persistent Node.js server** for WebSocket connections, so static hosts and serverless platforms (Vercel, Netlify, Cloudflare Pages) won't work. Here are free options that do:
+
+| Platform | Free Tier | Best For | Notes |
+|----------|-----------|----------|-------|
+| **Your laptop** | Free | One-off events | Simplest option — just run on the same WiFi as your attendees. No internet needed. |
+| [Railway](https://railway.app) | $5/month credit | Hosted events | Deploy from GitHub, supports WebSockets. Sleeps after inactivity but wakes fast. |
+| [Render](https://render.com) | Free web service | Hosted events | Auto-deploys from GitHub. Free tier spins down after 15 min idle — fine for events since you spin it up beforehand. |
+| [Fly.io](https://fly.io) | 3 shared VMs free | Always-on hosting | Closest to a real VPS. Needs `flyctl` CLI to deploy. Great if you want a persistent URL. |
+| [Glitch](https://glitch.com) | Free | Quick demos | Import from GitHub, instant URL. Sleeps after 5 min idle but wakes on first request. |
+
+**Recommendation:** For most people, just run it on your laptop at the event. It's the simplest setup and doesn't require internet — everyone just needs to be on the same WiFi. If you want a public URL for remote participants, Railway or Render are the easiest to set up.
+
 ## Tech Stack
 
 - **Next.js 14** — React framework with App Router
