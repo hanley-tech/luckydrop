@@ -17,7 +17,7 @@ No app install. No sign-up. Just scan, drop, and win.
 - **Built for the big screen** — Designed for projectors and TVs at 16:9. Looks great in any venue.
 - **Audio experience** — TTS announcements, sound effects, and background music keep the energy high.
 - **Operator control** — Run the show from your phone. Start rounds, remove players, restart matches.
-- **Battle-tested** — Used at live events with 30+ participants. It hits.
+- **Battle-tested** — Tested with 80 players on a MacBook Air M2. Used at live events. It hits.
 - **Self-hosted & free** — Run it on your own machine. No subscriptions, no vendor lock-in.
 
 ## Quick Start
@@ -141,7 +141,7 @@ The operator panel includes debug tools for testing:
 - **Network**: The display machine and players' phones need to be on the same WiFi network
 - **Audio**: Click anywhere on the display to unlock audio — the app has TTS announcements, sound effects, and background music. Use the speaker button (bottom-right) to mute/unmute.
 - **Sizing**: The display is designed for 16:9 screens and scales proportionally. Works best on a projector or TV.
-- **Player count**: Tested with 30+ concurrent players. Elimination narrows the field fast so rounds stay exciting.
+- **Player count**: Tested with 80 concurrent players on a MacBook Air M2 16GB. Elimination narrows the field fast so rounds stay exciting.
 - **Name moderation**: For public events, set an `OPENAI_API_KEY` and enable name checking from the operator panel to filter inappropriate names.
 
 ## Setup
