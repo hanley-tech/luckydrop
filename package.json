@@ -1,0 +1,33 @@
+{
+  "name": "luckydrop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx tsx server.ts",
+    "build": "next build",
+    "start": "NODE_ENV=production npx tsx server.ts",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "matter-js": "^0.20.0",
+    "next": "14.2.35",
+    "openai": "^6.25.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/matter-js": "^0.20.2",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

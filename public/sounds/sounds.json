@@ -1,0 +1,17 @@
+{
+  "sfx": {
+    "playerJoined": "player-joined.mp3",
+    "gameStart": "game-start.mp3",
+    "ballCenter": "ball-center.mp3",
+    "roundComplete": "round-complete.mp3",
+    "retry": "retry.mp3",
+    "winnerCheers": "winner-cheers.mp3",
+    "powerUp": "power-up.mp3"
+  },
+  "music": {
+    "lobby": "lobby.mp3",
+    "game": "game.mp3",
+    "transition": "transition.mp3",
+    "winner": "winner.mp3"
+  }
+}
