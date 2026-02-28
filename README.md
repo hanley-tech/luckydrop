@@ -46,7 +46,47 @@ LuckyDrop has three views connected via WebSockets:
 - **Join** (`/join`) — Mobile-friendly page where players scan the QR code and enter their name + emoji.
 - **Operator** (`/operator`) — Control panel to start rounds, manage players, and run the game.
 
+### Architecture
+
+```mermaid
+graph LR
+    subgraph Clients
+        D["Display<br/>(Projector)"]
+        J["Join<br/>(Phones)"]
+        O["Operator<br/>(Host device)"]
+    end
+
+    subgraph Server
+        S["Node.js + Next.js"]
+        IO["Socket.IO"]
+        GS["Game State"]
+        API["Name Check API<br/>(OpenAI)"]
+    end
+
+    D <-->|WebSocket| IO
+    J <-->|WebSocket| IO
+    O <-->|WebSocket| IO
+    J -->|POST /api/check-name| API
+    IO --- GS
+    S --- IO
+```
+
 ### Game Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Lobby: Server starts
+    Lobby --> Dropping: Operator starts game
+    Dropping --> Elimination: Balls settle
+
+    Elimination --> Dropping: Multiple players remain
+    Elimination --> Dropping: Nobody hit center (retry)
+    Elimination --> Winner: One player left
+
+    Winner --> Lobby: Restart Match
+    Winner --> Lobby: Reset All
+    Lobby --> Lobby: Players join via QR
+```
 
 1. Show the display screen and let players scan the QR code to join
 2. The operator starts the game — all player balls drop through the Plinko board
