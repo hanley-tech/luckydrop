@@ -58,7 +58,7 @@ rsync -avz --delete \
 
 # Step 4: Install dependencies on server
 info "Installing production dependencies..."
-ssh -i "$KEY" "$SERVER" "cd $REMOTE_PATH && npm install --production"
+ssh -i "$KEY" "$SERVER" "cd $REMOTE_PATH && npm install"
 
 # Step 5: Restart PM2 process
 info "Restarting PM2 process..."

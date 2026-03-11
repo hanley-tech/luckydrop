@@ -183,14 +183,16 @@ export function render(
   const r = Math.round((boardWidth / 9) * 0.08);
   const visualR = r + Math.round(r * 0.25);
   const spriteSize = (visualR + 2) * 2;
-  const showNames = ballCount <= 80;
+  // Scale name font size down as ball count increases
+  const baseFontSize = Math.max(18, Math.round(boardWidth * 0.018));
+  const nameFontSize = ballCount > 80
+    ? Math.max(10, Math.round(baseFontSize * (80 / ballCount)))
+    : baseFontSize;
 
-  if (showNames) {
-    ctx.fillStyle = TEXT_COLOR;
-    ctx.font = `bold ${Math.max(18, Math.round(boardWidth * 0.018))}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-  }
+  ctx.fillStyle = TEXT_COLOR;
+  ctx.font = `bold ${nameFontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
 
   for (const ball of balls) {
     const player = getBallPlayer(ball);
@@ -203,10 +205,8 @@ export function render(
       ball.position.y - spriteSize / 2
     );
 
-    if (showNames) {
-      ctx.fillStyle = TEXT_COLOR;
-      ctx.fillText(player.name, ball.position.x, ball.position.y + visualR + 4);
-    }
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.fillText(player.name, ball.position.x, ball.position.y + visualR + 4);
   }
 
   // Dim the board during recycling (the message overlay is in GamePhase.tsx)
