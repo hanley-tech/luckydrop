@@ -36,11 +36,18 @@ export class BallManager {
     this._ballRadius = ballRadius(boardWidth);
     const r = this._ballRadius;
 
-    for (let i = 0; i < players.length; i++) {
+    // Scale spawn area with player count so balls don't pile up
+    const count = players.length;
+    const xSpread = Math.min(boardWidth * 0.6, Math.max(60, count * 2));
+    const yWaves = Math.ceil(count / 20); // ~20 balls per wave
+    const ySpacing = Math.max(30, r * 3);
+
+    for (let i = 0; i < count; i++) {
       const player = players[i];
-      const posJitter = (Math.random() - 0.5) * 60;
+      const wave = Math.floor(i / 20);
+      const posJitter = (Math.random() - 0.5) * xSpread;
       const x = centerX + posJitter;
-      const y = 20 + Math.random() * 30;
+      const y = 20 + wave * ySpacing + Math.random() * ySpacing * 0.8;
 
       const body = Matter.Bodies.circle(x, y, r, {
         restitution: 0.6,
@@ -94,11 +101,16 @@ export class BallManager {
     const centerX = boardWidth / 2;
     const entries = Array.from(this.ballMap.values());
 
-    for (let i = 0; i < entries.length; i++) {
+    const count = entries.length;
+    const xSpread = Math.min(boardWidth * 0.6, Math.max(60, count * 2));
+    const ySpacing = Math.max(30, this._ballRadius * 3);
+
+    for (let i = 0; i < count; i++) {
       const { body } = entries[i];
-      const posJitter = (Math.random() - 0.5) * 60;
+      const wave = Math.floor(i / 20);
+      const posJitter = (Math.random() - 0.5) * xSpread;
       const x = centerX + posJitter;
-      const y = 20 + Math.random() * 30;
+      const y = 20 + wave * ySpacing + Math.random() * ySpacing * 0.8;
 
       Matter.Body.setPosition(body, { x, y });
       Matter.Body.setVelocity(body, {
