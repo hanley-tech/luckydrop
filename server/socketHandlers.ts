@@ -38,6 +38,7 @@ export function setupSocketHandlers(io: Server): void {
         isDebugUser: false,
         eliminated: false,
         eliminatedRound: null,
+        eliminatedOrder: null,
       };
 
       if (gameState.addPlayer(player)) {
@@ -82,6 +83,14 @@ export function setupSocketHandlers(io: Server): void {
       const result = gameState.reportRoundResult(data.advancedIds, data.eliminatedIds);
 
       if (result.type === "winner") {
+        // Emit ROUND_COMPLETE first so clients tag the final round's losers
+        // with eliminatedRound + eliminatedOrder. WinnerPhase relies on this
+        // to show 2nd–5th place.
+        io.emit(S2C.ROUND_COMPLETE, {
+          advanced: result.advanced,
+          eliminated: result.eliminated,
+          roundNumber: result.round,
+        });
         io.emit(S2C.WINNER, {
           player: result.winner,
           roundNumber: result.round,

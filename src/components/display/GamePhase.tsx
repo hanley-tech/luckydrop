@@ -101,7 +101,16 @@ export default function GamePhase({
   onRoundResult,
 }: GamePhaseProps) {
   const activePlayers = players.filter((p) => !p.eliminated);
-  const eliminatedPlayers = players.filter((p) => p.eliminated);
+  // Sort eliminated by rank: later round of elimination = higher in the list.
+  // Within the same round, the ball that settled *last* ranks higher (it stayed
+  // in play longer that round).
+  const eliminatedPlayers = players
+    .filter((p) => p.eliminated)
+    .sort((a, b) => {
+      const roundDiff = (b.eliminatedRound ?? 0) - (a.eliminatedRound ?? 0);
+      if (roundDiff !== 0) return roundDiff;
+      return (b.eliminatedOrder ?? -1) - (a.eliminatedOrder ?? -1);
+    });
 
   // Track real-time landed status: playerId -> "center" | "missed"
   // This is purely visual during the round — no one moves to eliminated until

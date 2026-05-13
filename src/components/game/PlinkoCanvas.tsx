@@ -43,7 +43,10 @@ export default function PlinkoCanvas({
   const prevRoundRef = useRef(roundNumber);
   const settleFramesRef = useRef(0);
   const SETTLE_FRAMES_REQUIRED = 30; // ~0.5s of stillness
-  const reportedLandingsRef = useRef<Set<string>>(new Set());
+  // playerId -> settle index (0 = first ball to come to rest). reportResults
+  // sorts the round's balls by this index, so eliminatedIds reaches the server
+  // in settle order and same-round losers display in a deterministic order.
+  const reportedLandingsRef = useRef<Map<string, number>>(new Map());
 
   // Keep props in refs so the animation loop always sees the latest values
   // without needing to be re-created (avoids RAF restart gaps)
@@ -68,10 +71,19 @@ export default function PlinkoCanvas({
 
   const reportResults = useCallback(
     (ballMgr: BallManager, board: BoardGeometry) => {
+      const landings = reportedLandingsRef.current;
+      const balls = ballMgr.getAllBalls().slice().sort((a, b) => {
+        const pa = ballMgr.getBallPlayer(a);
+        const pb = ballMgr.getBallPlayer(b);
+        const orderA = pa ? landings.get(pa.id) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+        const orderB = pb ? landings.get(pb.id) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
+
       const advanced: string[] = [];
       const eliminated: string[] = [];
 
-      for (const ball of ballMgr.getAllBalls()) {
+      for (const ball of balls) {
         const player = ballMgr.getBallPlayer(ball);
         if (!player) continue;
 
@@ -146,7 +158,7 @@ export default function PlinkoCanvas({
     );
 
     // Real-time individual ball landing detection
-    if (!resultReportedRef.current && !recycling && onBallLandedRef.current) {
+    if (!resultReportedRef.current && !recycling) {
       for (const ball of ballMgr.getAllBalls()) {
         const player = ballMgr.getBallPlayer(ball);
         if (!player) continue;
@@ -158,8 +170,8 @@ export default function PlinkoCanvas({
         if (ball.position.y > slotTop && speed < 1.0) {
           const slotIdx = ballMgr.getBallSlot(ball, board.slotSensors);
           const inCenter = board.centerSlotIndices.has(slotIdx);
-          reportedLandingsRef.current.add(player.id);
-          onBallLandedRef.current(player.id, inCenter);
+          reportedLandingsRef.current.set(player.id, reportedLandingsRef.current.size);
+          onBallLandedRef.current?.(player.id, inCenter);
         }
       }
     }
@@ -212,7 +224,7 @@ export default function PlinkoCanvas({
 
     resultReportedRef.current = false;
     settleFramesRef.current = 0;
-    reportedLandingsRef.current = new Set();
+    reportedLandingsRef.current = new Map();
 
     rafRef.current = requestAnimationFrame(loop);
 
@@ -274,7 +286,7 @@ export default function PlinkoCanvas({
       ballMgr.resetBallPositions(width);
       resultReportedRef.current = false;
       settleFramesRef.current = 0;
-      reportedLandingsRef.current = new Set();
+      reportedLandingsRef.current = new Map();
     }
   }, [roundNumber, isRecycling, players, getBoardSize]);
 
@@ -293,7 +305,7 @@ export default function PlinkoCanvas({
       ballMgr.resetBallPositions(width);
       resultReportedRef.current = false;
       settleFramesRef.current = 0;
-      reportedLandingsRef.current = new Set();
+      reportedLandingsRef.current = new Map();
     }
     // When recycling starts: do nothing — keep balls where they are
     // so the overlay shows over the settled board

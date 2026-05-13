@@ -241,6 +241,7 @@ export default function LobbyDemoCanvas({ players }: LobbyDemoCanvasProps) {
         isDebugUser: false,
         eliminated: false,
         eliminatedRound: null,
+        eliminatedOrder: null,
       };
       dummyBallsRef.current.push({ body, player });
     }

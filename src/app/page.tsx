@@ -142,14 +142,23 @@ export default function DisplayPage() {
         eliminated: Player[];
         roundNumber: number;
       }) => {
-        const eliminatedIds = data.eliminated.map((p) => p.id);
+        // Mirror server-assigned eliminatedOrder onto local player state so
+        // the in-game eliminated sidebar and the winner page can tiebreak
+        // same-round losers in settle order instead of alphabetically.
+        const elimMap = new Map(data.eliminated.map((p) => [p.id, p]));
 
         setPlayers((prev) =>
-          prev.map((p) =>
-            eliminatedIds.includes(p.id)
-              ? { ...p, eliminated: true, eliminatedRound: data.roundNumber }
-              : p
-          )
+          prev.map((p) => {
+            const elim = elimMap.get(p.id);
+            return elim
+              ? {
+                  ...p,
+                  eliminated: true,
+                  eliminatedRound: data.roundNumber,
+                  eliminatedOrder: elim.eliminatedOrder,
+                }
+              : p;
+          })
         );
 
         if (data.eliminated.length === 0 && data.advanced.length === 0) {
@@ -215,7 +224,7 @@ export default function DisplayPage() {
   // Render based on current phase
   let content;
   if (phase === "winner" && winner) {
-    content = <WinnerPhase winner={winner} />;
+    content = <WinnerPhase winner={winner} players={players} />;
   } else if (phase === "dropping" || phase === "recycling") {
     content = (
       <GamePhaseComponent

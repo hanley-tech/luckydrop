@@ -84,6 +84,7 @@ export class GameStateManager {
       ...p,
       eliminated: false,
       eliminatedRound: null,
+      eliminatedOrder: null,
     }));
     return this.state.activePlayers;
   }
@@ -101,9 +102,13 @@ export class GameStateManager {
     const advanced = this.state.activePlayers.filter((p) =>
       advancedIds.includes(p.id)
     );
-    const eliminated = this.state.activePlayers.filter((p) =>
-      eliminatedIds.includes(p.id)
-    );
+    // Preserve the incoming order — eliminatedIds arrives in settle order
+    // (first ball to come to rest is first in the list), and we use that as
+    // the tiebreaker for same-round losers in both the in-game eliminated
+    // sidebar and the winner page.
+    const eliminated = eliminatedIds
+      .map((id) => this.state.activePlayers.find((p) => p.id === id))
+      .filter((p): p is Player => p !== undefined);
 
     const currentRound = this.state.round;
 
@@ -118,14 +123,19 @@ export class GameStateManager {
       };
     }
 
-    // Mark eliminated players (only when someone actually advanced)
-    for (const p of eliminated) {
+    // Mark eliminated players (only when someone actually advanced). Their
+    // index in `eliminated[]` is the settle order — used to break ties when
+    // ranking same-round losers.
+    for (let i = 0; i < eliminated.length; i++) {
+      const p = eliminated[i];
       p.eliminated = true;
-      p.eliminatedRound = this.state.round;
+      p.eliminatedRound = currentRound;
+      p.eliminatedOrder = i;
       const mainPlayer = this.state.players.find((mp) => mp.id === p.id);
       if (mainPlayer) {
         mainPlayer.eliminated = true;
-        mainPlayer.eliminatedRound = this.state.round;
+        mainPlayer.eliminatedRound = currentRound;
+        mainPlayer.eliminatedOrder = i;
       }
     }
 
@@ -177,6 +187,7 @@ export class GameStateManager {
         isDebugUser: true,
         eliminated: false,
         eliminatedRound: null,
+        eliminatedOrder: null,
       };
       this.state.players.push(player);
       newPlayers.push(player);
@@ -193,6 +204,7 @@ export class GameStateManager {
     for (const p of this.state.players) {
       p.eliminated = false;
       p.eliminatedRound = null;
+      p.eliminatedOrder = null;
     }
   }
 

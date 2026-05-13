@@ -10,6 +10,10 @@ export interface Player {
   isDebugUser: boolean;
   eliminated: boolean;
   eliminatedRound: number | null;
+  /** Settle order in the round of elimination (0 = first ball to come to rest).
+   *  Used as a tiebreaker so same-round losers display in a deterministic,
+   *  non-alphabetical order. */
+  eliminatedOrder: number | null;
 }
 
 export type GamePhase = "lobby" | "dropping" | "recycling" | "winner";
