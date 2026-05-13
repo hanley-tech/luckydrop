@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 
-import { Player } from "@/types";
+import { Player, LevelId } from "@/types";
 import { getEmoji } from "@/lib/emojis";
 import { announceBallInCenter } from "@/lib/audio";
 import PlinkoCanvas from "@/components/game/PlinkoCanvas";
@@ -11,6 +11,7 @@ interface GamePhaseProps {
   players: Player[];
   round: number;
   phase: "dropping" | "recycling";
+  levelId: LevelId;
   onRoundResult: (advancedIds: string[], eliminatedIds: string[]) => void;
 }
 
@@ -96,6 +97,7 @@ export default function GamePhase({
   players,
   round,
   phase,
+  levelId,
   onRoundResult,
 }: GamePhaseProps) {
   const activePlayers = players.filter((p) => !p.eliminated);
@@ -159,6 +161,7 @@ export default function GamePhase({
             players={activePlayers}
             roundNumber={round}
             isRecycling={phase === "recycling"}
+            levelId={levelId}
             onRoundResult={handleRoundResult}
             onBallLanded={handleBallLanded}
           />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Player } from "@/types";
 import PlayerList from "./PlayerList";
+import LobbyDemoCanvas from "./LobbyDemoCanvas";
 
 interface QRCodePhaseProps {
   players: Player[];
@@ -18,60 +19,72 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
   }, []);
 
   return (
-    <div className="w-full h-full bg-[#0F172A] flex flex-col items-center justify-center p-16">
-      {/* Main content area */}
-      <div className="flex flex-row items-center justify-center gap-24 w-full max-w-[3400px]">
-        {/* QR Code Section */}
-        <div className="flex flex-col items-center gap-14 shrink-0">
-          {/* Title */}
-          <h1 className="text-[10rem] font-black text-white tracking-tight">
-            Lucky
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-              Drop
-            </span>
-          </h1>
+    <div className="w-full h-full bg-[#0F172A] flex p-10 gap-8">
+      {/* Left column: live physics demo (double-width) */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <h2 className="text-5xl font-bold text-slate-300 mb-4 text-center">
+          Live Demo
+        </h2>
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <LobbyDemoCanvas players={players} />
+        </div>
+      </div>
 
-          {/* QR Code */}
-          <div className="bg-white p-12 rounded-3xl shadow-2xl shadow-blue-500/20">
-            {joinUrl && (
-              <QRCodeSVG
-                value={joinUrl}
-                size={700}
-                bgColor="#FFFFFF"
-                fgColor="#0F172A"
-                level="H"
-              />
-            )}
-          </div>
+      {/* Center column: title + QR + count — only as wide as it needs to be */}
+      <div className="shrink-0 flex flex-col items-center justify-center gap-6 px-40">
+        <h1 className="text-[5rem] font-black text-white tracking-tight leading-none text-center">
+          Lucky
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+            Drop
+          </span>
+        </h1>
 
-          {/* Scan to Join text */}
-          <p className="text-8xl font-bold text-white animate-pulse">
-            Scan to Join!
-          </p>
-
-          {/* URL fallback */}
-          <p className="text-4xl text-slate-400 font-mono">
-            {joinUrl || "Loading..."}
-          </p>
-
-          {/* Player count */}
-          <div className="flex items-center gap-6 bg-white/10 rounded-full px-14 py-7 backdrop-blur-sm">
-            <div className="w-6 h-6 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-6xl font-bold text-white">
-              {players.length} player{players.length !== 1 ? "s" : ""} joined
-            </span>
-          </div>
+        <div className="bg-white p-6 rounded-3xl shadow-2xl shadow-blue-500/20">
+          {joinUrl && (
+            <QRCodeSVG
+              value={joinUrl}
+              size={420}
+              bgColor="#FFFFFF"
+              fgColor="#0F172A"
+              level="H"
+            />
+          )}
         </div>
 
-        {/* Player List Section */}
-        {players.length > 0 && (
-          <div className="flex-1 min-w-0 max-w-[1600px]">
-            <h2 className="text-6xl font-bold text-slate-300 mb-8">
-              Players
-            </h2>
-            <PlayerList players={players} />
-          </div>
-        )}
+        <p className="text-5xl font-bold text-white animate-pulse">
+          Scan to Join!
+        </p>
+
+        <p className="text-xl text-slate-400 font-mono">
+          {joinUrl || "Loading..."}
+        </p>
+
+        <div className="flex items-center gap-4 bg-white/10 rounded-full px-8 py-4 backdrop-blur-sm">
+          <div className="w-4 h-4 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-3xl font-bold text-white whitespace-nowrap">
+            {players.length} player{players.length !== 1 ? "s" : ""} joined
+          </span>
+        </div>
+      </div>
+
+      {/* Right column: 3-column player list (auto-scrolls when overflowing) */}
+      <div className="flex-1 flex flex-col min-h-0 px-12">
+        <h2 className="text-5xl font-bold text-slate-300 mb-4 text-center">
+          Players
+        </h2>
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          {players.length === 0 ? (
+            <p className="text-3xl text-slate-500 text-center">
+              Waiting for the first player...
+            </p>
+          ) : (
+            <div className="h-full w-full flex items-center">
+              <div className="w-full h-full max-h-full">
+                <PlayerList players={players} />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

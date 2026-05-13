@@ -1,5 +1,7 @@
 export type EmojiId = string; // any emoji id from the BALL_EMOJIS list
 
+export type LevelId = "classic" | "cannon" | "tray";
+
 export interface Player {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ export interface GameState {
   round: number;
   winner: Player | null;
   nameCheckEnabled: boolean;
+  levelId: LevelId;
 }
 
 export interface JoinRequest {

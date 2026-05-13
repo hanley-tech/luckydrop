@@ -1,4 +1,4 @@
-import { GamePhase, GameState, Player, EmojiId } from "@/types";
+import { GamePhase, GameState, Player, EmojiId, LevelId } from "@/types";
 import { BALL_EMOJIS } from "@/lib/emojis";
 
 const RANDOM_NAMES = [
@@ -22,7 +22,14 @@ export class GameStateManager {
       round: 0,
       winner: null,
       nameCheckEnabled: false,
+      levelId: "classic",
     };
+  }
+
+  setLevel(levelId: LevelId): void {
+    // Only allow level change while in lobby — committed once the match starts
+    if (this.state.phase !== "lobby") return;
+    this.state.levelId = levelId;
   }
 
   getState(): GameState {
@@ -195,5 +202,6 @@ export class GameStateManager {
     this.state.activePlayers = [];
     this.state.round = 0;
     this.state.winner = null;
+    // levelId is preserved across resets so the operator's choice sticks
   }
 }

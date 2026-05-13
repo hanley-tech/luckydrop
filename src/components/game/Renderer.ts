@@ -8,10 +8,18 @@ const DIVIDER_COLOR = "#334155";
 const CENTER_GLOW_COLOR = "rgba(251, 191, 36, 0.35)";
 const CENTER_BORDER_COLOR = "#F59E0B";
 const TEXT_COLOR = "#FFFFFF";
+const BOUNCY_PEG_COLOR = "#EC4899";
+const BOUNCY_PEG_GLOW = "rgba(236, 72, 153, 0.45)";
+const PLATFORM_COLOR = "#FBBF24";
+const PLATFORM_EDGE = "#92400E";
+const PROJECTILE_COLOR = "#F97316";
 
 interface RenderOptions {
   roundNumber: number;
   isRecycling: boolean;
+  bouncyPegs?: Matter.Body[];
+  platforms?: Matter.Body[];
+  projectiles?: Matter.Body[];
 }
 
 // ---------------------------------------------------------------------------
@@ -193,6 +201,79 @@ export function render(
   ctx.font = `bold ${nameFontSize}px sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
+
+  // ----- Level extras: bouncy pegs (drawn behind balls) -----
+  if (options.bouncyPegs && options.bouncyPegs.length > 0) {
+    for (const p of options.bouncyPegs) {
+      const radius =
+        (p as Matter.Body & { circleRadius?: number }).circleRadius ?? 10;
+      ctx.fillStyle = BOUNCY_PEG_GLOW;
+      ctx.beginPath();
+      ctx.arc(p.position.x, p.position.y, radius * 1.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = BOUNCY_PEG_COLOR;
+      ctx.beginPath();
+      ctx.arc(p.position.x, p.position.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // ----- Level extras: platforms (sliding tray segments) -----
+  if (options.platforms && options.platforms.length > 0) {
+    for (const seg of options.platforms) {
+      const bounds = seg.bounds;
+      const w = bounds.max.x - bounds.min.x;
+      const h = bounds.max.y - bounds.min.y;
+      ctx.fillStyle = PLATFORM_COLOR;
+      ctx.fillRect(bounds.min.x, bounds.min.y, w, h);
+      ctx.strokeStyle = PLATFORM_EDGE;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bounds.min.x, bounds.min.y, w, h);
+    }
+  }
+
+  // ----- Level extras: projectiles (cannonballs) — drawn under player balls -----
+  if (options.projectiles && options.projectiles.length > 0) {
+    for (const p of options.projectiles) {
+      const radius =
+        (p as Matter.Body & { circleRadius?: number }).circleRadius ?? 10;
+      // Motion trail
+      const speed = Math.sqrt(
+        p.velocity.x * p.velocity.x + p.velocity.y * p.velocity.y
+      );
+      if (speed > 1) {
+        const trailLen = Math.min(radius * 4, speed * 6);
+        const angle = Math.atan2(p.velocity.y, p.velocity.x);
+        const tx = p.position.x - Math.cos(angle) * trailLen;
+        const ty = p.position.y - Math.sin(angle) * trailLen;
+        const grad = ctx.createLinearGradient(
+          p.position.x,
+          p.position.y,
+          tx,
+          ty
+        );
+        grad.addColorStop(0, "rgba(249, 115, 22, 0.9)");
+        grad.addColorStop(1, "rgba(249, 115, 22, 0)");
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = radius * 1.6;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(p.position.x, p.position.y);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+      }
+      ctx.fillStyle = PROJECTILE_COLOR;
+      ctx.beginPath();
+      ctx.arc(p.position.x, p.position.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#7C2D12";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
 
   for (const ball of balls) {
     const player = getBallPlayer(ball);

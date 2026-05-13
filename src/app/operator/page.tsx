@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { C2S, S2C } from "@/lib/socketEvents";
-import { GameState, Player } from "@/types";
+import { GameState, Player, LevelId } from "@/types";
 import { getEmoji } from "@/lib/emojis";
 import ControlPanel from "@/components/operator/ControlPanel";
 import DebugTools from "@/components/operator/DebugTools";
@@ -15,6 +15,7 @@ const defaultGameState: GameState = {
   round: 0,
   winner: null,
   nameCheckEnabled: false,
+  levelId: "classic",
 };
 
 export default function OperatorPage() {
@@ -73,6 +74,10 @@ export default function OperatorPage() {
       }
     );
 
+    socket.on(S2C.LEVEL_CHANGED, (data: { levelId: LevelId }) => {
+      setGameState((prev) => ({ ...prev, levelId: data.levelId }));
+    });
+
     return () => {
       socket.off(S2C.GAME_STATE_SYNC);
       socket.off(S2C.PLAYER_LIST);
@@ -82,6 +87,7 @@ export default function OperatorPage() {
       socket.off(S2C.WINNER);
       socket.off(S2C.GAME_RESET);
       socket.off(S2C.NAME_CHECK_STATUS);
+      socket.off(S2C.LEVEL_CHANGED);
     };
   }, []);
 
@@ -100,9 +106,9 @@ export default function OperatorPage() {
     socket.emit(C2S.OPERATOR_RESTART_MATCH);
   };
 
-  const handleAddDebugUsers = () => {
+  const handleAddDebugUsers = (count: number) => {
     const socket = getSocket();
-    socket.emit(C2S.DEBUG_ADD_USERS, { count: 40 });
+    socket.emit(C2S.DEBUG_ADD_USERS, { count });
   };
 
   const handleToggleNameCheck = (enabled: boolean) => {
@@ -113,6 +119,11 @@ export default function OperatorPage() {
   const handleRemovePlayer = (playerId: string) => {
     const socket = getSocket();
     socket.emit(C2S.REMOVE_PLAYER, { playerId });
+  };
+
+  const handleSetLevel = (levelId: LevelId) => {
+    const socket = getSocket();
+    socket.emit(C2S.OPERATOR_SET_LEVEL, { levelId });
   };
 
   return (
@@ -127,6 +138,7 @@ export default function OperatorPage() {
           onStart={handleStart}
           onReset={handleReset}
           onRestartMatch={handleRestartMatch}
+          onSetLevel={handleSetLevel}
         />
 
         <DebugTools

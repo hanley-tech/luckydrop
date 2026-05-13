@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { GameStateManager } from "../src/lib/gameState";
 import { C2S, S2C } from "../src/lib/socketEvents";
-import { JoinRequest, EmojiId } from "../src/types";
+import { JoinRequest, EmojiId, LevelId } from "../src/types";
 
 export function setupSocketHandlers(io: Server): void {
   const gameState = new GameStateManager();
@@ -68,6 +68,13 @@ export function setupSocketHandlers(io: Server): void {
     socket.on(C2S.OPERATOR_RESTART_MATCH, () => {
       gameState.restartMatch();
       io.emit(S2C.GAME_STATE_SYNC, gameState.getState());
+    });
+
+    // Operator picks the level for the next match (only valid in lobby)
+    socket.on(C2S.OPERATOR_SET_LEVEL, (data: { levelId: LevelId }) => {
+      if (!data?.levelId) return;
+      gameState.setLevel(data.levelId);
+      io.emit(S2C.LEVEL_CHANGED, { levelId: gameState.getState().levelId });
     });
 
     // Display reports round result

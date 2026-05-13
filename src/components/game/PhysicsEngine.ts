@@ -3,18 +3,26 @@ import Matter from "matter-js";
 // Collision categories
 export const CATEGORY_PEG = 0x0001;
 export const CATEGORY_BALL = 0x0002;
+export const CATEGORY_PROJECTILE = 0x0004;
 
-/** Collision filter for pegs, walls, and slot dividers */
+/** Collision filter for pegs, walls, and slot dividers — only collide with balls */
 export const PEG_FILTER: Matter.ICollisionFilter = {
   category: CATEGORY_PEG,
   mask: CATEGORY_BALL,
   group: 0,
 };
 
-/** Collision filter for balls – balls pass through each other, only hit pegs/walls */
+/** Collision filter for balls – balls pass through each other, hit pegs/walls/projectiles */
 export const BALL_FILTER: Matter.ICollisionFilter = {
   category: CATEGORY_BALL,
-  mask: CATEGORY_PEG,
+  mask: CATEGORY_PEG | CATEGORY_PROJECTILE,
+  group: 0,
+};
+
+/** Projectiles (e.g. cannonballs) – hit balls and walls, pass through pegs so they fly straight */
+export const PROJECTILE_FILTER: Matter.ICollisionFilter = {
+  category: CATEGORY_PROJECTILE,
+  mask: CATEGORY_BALL,
   group: 0,
 };
 

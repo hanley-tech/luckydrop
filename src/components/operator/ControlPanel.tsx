@@ -1,12 +1,14 @@
 "use client";
 
-import { GameState } from "@/types";
+import { GameState, LevelId } from "@/types";
+import { LEVELS, LEVEL_ORDER } from "@/components/game/levels";
 
 interface ControlPanelProps {
   gameState: GameState;
   onStart: () => void;
   onReset: () => void;
   onRestartMatch: () => void;
+  onSetLevel: (levelId: LevelId) => void;
 }
 
 export default function ControlPanel({
@@ -14,10 +16,13 @@ export default function ControlPanel({
   onStart,
   onReset,
   onRestartMatch,
+  onSetLevel,
 }: ControlPanelProps) {
-  const { phase, players, activePlayers, round } = gameState;
+  const { phase, players, activePlayers, round, levelId } = gameState;
   const canStart = phase === "lobby" && players.length > 0;
   const canRestart = phase !== "lobby";
+  const canChangeLevel = phase === "lobby";
+  const activeLevel = LEVELS[levelId] ?? LEVELS.classic;
 
   return (
     <div className="bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-700">
@@ -47,6 +52,35 @@ export default function ControlPanel({
             {activePlayers.length} / {players.length}
           </p>
         </div>
+      </div>
+
+      {/* Level picker */}
+      <div className="bg-slate-900 rounded-lg p-4 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm text-slate-400 uppercase tracking-wide">
+            Level (next match)
+          </label>
+          <select
+            value={levelId}
+            onChange={(e) => onSetLevel(e.target.value as LevelId)}
+            disabled={!canChangeLevel}
+            className={`flex-1 max-w-sm bg-slate-800 text-white rounded-lg px-3 py-2 font-semibold border border-slate-600 ${
+              canChangeLevel ? "cursor-pointer hover:border-slate-500" : "opacity-60 cursor-not-allowed"
+            }`}
+          >
+            {LEVEL_ORDER.map((id) => (
+              <option key={id} value={id}>
+                {LEVELS[id].name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <p className="text-xs text-slate-500">{activeLevel.description}</p>
+        {!canChangeLevel && (
+          <p className="text-xs text-yellow-400">
+            Locked while a match is in progress. Restart match to switch levels.
+          </p>
+        )}
       </div>
 
       {/* Action buttons */}

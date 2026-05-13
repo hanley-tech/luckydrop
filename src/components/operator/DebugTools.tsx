@@ -2,7 +2,7 @@
 
 interface DebugToolsProps {
   nameCheckEnabled: boolean;
-  onAddDebugUsers: () => void;
+  onAddDebugUsers: (count: number) => void;
   onToggleNameCheck: (enabled: boolean) => void;
 }
 
@@ -16,13 +16,21 @@ export default function DebugTools({
       <h2 className="text-2xl font-bold text-yellow-400">Debug Tools</h2>
 
       <div className="space-y-4">
-        {/* Add test users button */}
-        <button
-          onClick={onAddDebugUsers}
-          className="w-full py-3 px-6 rounded-xl text-lg font-semibold bg-yellow-600 hover:bg-yellow-500 text-white transition-all active:scale-95"
-        >
-          Add 40 Test Users
-        </button>
+        {/* Add test users buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => onAddDebugUsers(5)}
+            className="py-3 px-6 rounded-xl text-lg font-semibold bg-yellow-700 hover:bg-yellow-600 text-white transition-all active:scale-95"
+          >
+            Add 5 Test Users
+          </button>
+          <button
+            onClick={() => onAddDebugUsers(40)}
+            className="py-3 px-6 rounded-xl text-lg font-semibold bg-yellow-600 hover:bg-yellow-500 text-white transition-all active:scale-95"
+          >
+            Add 40 Test Users
+          </button>
+        </div>
 
         {/* Name check toggle */}
         <div className="flex items-center justify-between bg-slate-900 rounded-lg p-4">

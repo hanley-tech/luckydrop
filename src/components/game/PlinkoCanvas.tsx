@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Player } from "@/types";
+import { Player, LevelId } from "@/types";
 import * as PhysicsEngine from "./PhysicsEngine";
 import { createBoard, setCenterWidth, BoardGeometry, CenterWidth } from "./PlinkoBoard";
 import { BallManager } from "./BallManager";
 import { render, clearRenderCache } from "./Renderer";
+import { getLevel, LevelHandle } from "./levels";
 
 interface PlinkoCanvasProps {
   players: Player[];
@@ -13,6 +14,7 @@ interface PlinkoCanvasProps {
   onBallLanded?: (playerId: string, inCenter: boolean) => void;
   roundNumber: number;
   isRecycling: boolean;
+  levelId: LevelId;
 }
 
 /** Round 1 = widest (5 slots), Round 2 = medium (3 slots), Round 3+ = narrow (1 slot) */
@@ -28,11 +30,14 @@ export default function PlinkoCanvas({
   onBallLanded,
   roundNumber,
   isRecycling,
+  levelId,
 }: PlinkoCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<PhysicsEngine.PhysicsEngineHandle | null>(null);
   const boardRef = useRef<BoardGeometry | null>(null);
   const ballMgrRef = useRef<BallManager | null>(null);
+  const levelRef = useRef<LevelHandle | null>(null);
+  const prevLevelIdRef = useRef<LevelId>(levelId);
   const rafRef = useRef<number>(0);
   const resultReportedRef = useRef(false);
   const prevRoundRef = useRef(roundNumber);
@@ -101,9 +106,12 @@ export default function PlinkoCanvas({
     }
 
     const recycling = isRecyclingRef.current;
+    const FRAME_MS = 1000 / 60;
 
     // Don't run physics while recycling overlay is showing or after results reported
     if (!resultReportedRef.current && !recycling) {
+      // Update active level (cannons firing, tray sliding, etc.) BEFORE the physics step
+      levelRef.current?.update?.(FRAME_MS);
       PhysicsEngine.step(engine);
     }
 
@@ -115,6 +123,7 @@ export default function PlinkoCanvas({
       ballMgr.nudgeStuckBalls(slotTop);
     }
 
+    const level = levelRef.current;
     render(
       ctx,
       board.pegs,
@@ -127,7 +136,13 @@ export default function PlinkoCanvas({
       width,
       height,
       (body) => ballMgr.getBallPlayer(body),
-      { roundNumber: roundNumberRef.current, isRecycling: recycling }
+      {
+        roundNumber: roundNumberRef.current,
+        isRecycling: recycling,
+        bouncyPegs: level?.bouncyPegs,
+        platforms: level?.platforms,
+        projectiles: level?.projectiles,
+      }
     );
 
     // Real-time individual ball landing detection
@@ -185,6 +200,11 @@ export default function PlinkoCanvas({
     const board = createBoard(handle.engine, width, height, centerWidth);
     boardRef.current = board;
 
+    // Install the active level (adds bouncy pegs, cannons, tray, etc.)
+    const levelDef = getLevel(levelId);
+    levelRef.current = levelDef.install(handle.engine, width, height);
+    prevLevelIdRef.current = levelId;
+
     const activePlayers = players.filter((p) => !p.eliminated);
     const mgr = new BallManager(handle.engine);
     mgr.createBalls(activePlayers, width);
@@ -198,12 +218,33 @@ export default function PlinkoCanvas({
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      if (levelRef.current) {
+        levelRef.current.destroy();
+        levelRef.current = null;
+      }
       if (engineRef.current) {
         PhysicsEngine.cleanup(engineRef.current.engine);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ----- React to level changes (rebuild obstacles in-place) -----
+  useEffect(() => {
+    if (levelId === prevLevelIdRef.current) return;
+    const engine = engineRef.current?.engine;
+    if (!engine) return;
+
+    if (levelRef.current) {
+      levelRef.current.destroy();
+      levelRef.current = null;
+    }
+    const { width, height } = getBoardSize();
+    const def = getLevel(levelId);
+    levelRef.current = def.install(engine, width, height);
+    prevLevelIdRef.current = levelId;
+    clearRenderCache();
+  }, [levelId, getBoardSize]);
 
   // ----- React to round changes -----
   useEffect(() => {

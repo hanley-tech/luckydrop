@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { getSocket } from "@/lib/socket";
 import { S2C, C2S } from "@/lib/socketEvents";
-import { GamePhase, GameState, Player } from "@/types";
+import { GamePhase, GameState, Player, LevelId } from "@/types";
 import QRCodePhase from "@/components/display/QRCodePhase";
 import GamePhaseComponent from "@/components/display/GamePhase";
 import WinnerPhase from "@/components/display/WinnerPhase";
@@ -54,6 +54,7 @@ export default function DisplayPage() {
   const [dropPhase, setDropPhase] = useState<"dropping" | "recycling">(
     "dropping"
   );
+  const [levelId, setLevelId] = useState<LevelId>("classic");
   const audioUnlocked = useRef(false);
 
   // Unlock audio on first user interaction (browser requirement)
@@ -83,11 +84,16 @@ export default function DisplayPage() {
       setPlayers(state.players);
       setRound(state.round);
       setWinner(state.winner);
+      setLevelId(state.levelId ?? "classic");
       if (state.phase === "recycling") {
         setDropPhase("recycling");
       } else if (state.phase === "dropping") {
         setDropPhase("dropping");
       }
+    });
+
+    socket.on(S2C.LEVEL_CHANGED, (data: { levelId: LevelId }) => {
+      setLevelId(data.levelId);
     });
 
     // Player events
@@ -190,6 +196,7 @@ export default function DisplayPage() {
       socket.off(S2C.ROUND_COMPLETE);
       socket.off(S2C.WINNER);
       socket.off(S2C.GAME_RESET);
+      socket.off(S2C.LEVEL_CHANGED);
     };
   }, []);
 
@@ -215,6 +222,7 @@ export default function DisplayPage() {
         players={players}
         round={round}
         phase={dropPhase}
+        levelId={levelId}
         onRoundResult={handleRoundResult}
       />
     );
