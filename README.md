@@ -80,7 +80,7 @@ graph LR
 stateDiagram-v2
     [*] --> Lobby: Server starts
     Lobby --> Dropping: Operator starts game
-    Dropping --> Elimination: Balls settle
+    Dropping --> Elimination: Balls reach the bottom
 
     Elimination --> Dropping: Multiple players remain
     Elimination --> Dropping: Nobody hit center (retry)
@@ -108,12 +108,12 @@ stateDiagram-v2
 
 #### Running a Draw
 
-1. **Lobby phase** — Attendees scan the QR code and enter their name + emoji. The display shows players as they join. Wait until everyone is in.
+1. **Lobby phase** — Attendees scan the QR code and enter their name + emoji. The display shows players as they join. Before starting, optionally pick a **level** and the number of **prize winners** (1–5). Wait until everyone is in.
 2. **Start the game** — Tap "Start Game" on the operator panel. All player balls drop through the Plinko board simultaneously.
-3. **Elimination** — Balls that land in the center "WIN" zone advance to the next round. All others are eliminated. The left sidebar shows remaining players, the right sidebar shows eliminated ones.
-4. **Subsequent rounds** — The next round starts automatically after a short pause. Fewer players means more tension.
-5. **Winner** — When one player remains, the display shows a celebration with confetti and announces the winner.
-6. **Play again** — Use "Restart Match" to go back to lobby with the same players, or "Reset All" to clear everything.
+3. **Elimination** — The moment a ball hits the bottom it's decided: land in the center "WIN" zone to advance (star burst), otherwise it explodes and is out. The left sidebar shows remaining players, the right sidebar shows eliminated ones. As the field shrinks the music speeds up and a tension pulse kicks in.
+4. **Subsequent rounds** — The next round starts automatically after a short pause. The win zone narrows and slow-motion kicks in for the decisive drops.
+5. **Winner(s)** — When the field resolves, the display celebrates with confetti and shows the ranked **podium** — the champion (or your top N prize winners) plus runners-up.
+6. **Play again** — Use "Restart Match" to go back to lobby with the same players (resets the music too), or "Reset All" to clear everything.
 
 #### Operator Controls
 
