@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { Player } from "@/types";
 import { BALL_EMOJIS, getEmoji, getEmojiBgColor } from "@/lib/emojis";
+import { getEmojiImage } from "@/lib/emojiImages";
 import * as PhysicsEngine from "@/components/game/PhysicsEngine";
 import { BALL_FILTER, PEG_FILTER } from "@/components/game/PhysicsEngine";
 
@@ -86,6 +87,137 @@ function buildMiniBoard(
   return { pegs, ballR, finishY: bottomMargin + ballR };
 }
 
+// --- Cached neon assets: bake once, then just drawImage per frame (no
+// per-ball shadowBlur/gradients, which tanked FPS with lots of players) ---
+let miniBg: HTMLCanvasElement | null = null;
+let miniBgKey = "";
+const miniBallCache = new Map<string, HTMLCanvasElement>();
+
+/** Background (gradient + grid + glowing pegs) — everything static, baked once. */
+function getMiniBg(
+  board: MiniBoard,
+  width: number,
+  height: number
+): HTMLCanvasElement {
+  const key = `${width}x${height}-${board.pegs.length}`;
+  if (miniBg && miniBgKey === key) return miniBg;
+
+  const c = document.createElement("canvas");
+  c.width = width;
+  c.height = height;
+  const ctx = c.getContext("2d")!;
+
+  const bg = ctx.createLinearGradient(0, 0, 0, height);
+  bg.addColorStop(0, "#05060f");
+  bg.addColorStop(1, "#0a0a1c");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  const cell = Math.max(22, Math.round(width / 10));
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(46,128,224,0.14)";
+  ctx.beginPath();
+  for (let x = 0; x <= width; x += cell) {
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+  }
+  for (let y = 0; y <= height; y += cell) {
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  for (const peg of board.pegs) {
+    const r = (peg as Matter.Body & { circleRadius?: number }).circleRadius ?? 4;
+    ctx.save();
+    ctx.shadowColor = "rgba(56,196,255,0.9)";
+    ctx.shadowBlur = r * 2.2;
+    ctx.fillStyle = "rgba(56,196,255,0.9)";
+    ctx.beginPath();
+    ctx.arc(peg.position.x, peg.position.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#cdf3ff";
+    ctx.beginPath();
+    ctx.arc(peg.position.x, peg.position.y, r * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  miniBg = c;
+  miniBgKey = key;
+  return c;
+}
+
+/** Neon ball sprite (halo + core + ring + emoji) baked once per look. */
+function getMiniBallSprite(
+  emojiId: string,
+  color: string,
+  r: number
+): HTMLCanvasElement {
+  const img = getEmojiImage(emojiId);
+  const key = `${emojiId}-${color}-${r}-${img ? "img" : "txt"}`;
+  const cached = miniBallCache.get(key);
+  if (cached) return cached;
+
+  const pad = Math.round(r * 1.9);
+  const size = pad * 2;
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext("2d")!;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const halo = ctx.createRadialGradient(cx, cy, r * 0.4, cx, cy, r * 1.9);
+  halo.addColorStop(0, hexToRgba(color, 0.5));
+  halo.addColorStop(0.55, hexToRgba(color, 0.18));
+  halo.addColorStop(1, hexToRgba(color, 0));
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 1.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  const core = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+  core.addColorStop(0, "rgba(20,24,40,0.92)");
+  core.addColorStop(1, "rgba(6,8,18,0.96)");
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = r * 0.7;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, r * 0.16);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - ctx.lineWidth * 0.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  if (img) {
+    const s = Math.round(r * 1.55);
+    ctx.drawImage(img, cx - s / 2, cy - s / 2, s, s);
+  } else {
+    const emoji = getEmoji(emojiId);
+    const emojiSize = Math.round(r * 1.25);
+    ctx.font = `${emojiSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, cx, cy + 1);
+  }
+
+  miniBallCache.set(key, c);
+  return c;
+}
+
 function drawMiniBoard(
   ctx: CanvasRenderingContext2D,
   board: MiniBoard,
@@ -93,71 +225,36 @@ function drawMiniBoard(
   height: number,
   balls: { body: Matter.Body; player: Player }[]
 ) {
-  // Background
-  ctx.fillStyle = "#0F172A";
-  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(getMiniBg(board, width, height), 0, 0);
 
-  // Pegs
-  ctx.fillStyle = "#94A3B8";
-  for (const peg of board.pegs) {
-    const r = (peg as Matter.Body & { circleRadius?: number }).circleRadius ?? 4;
-    ctx.beginPath();
-    ctx.arc(peg.position.x, peg.position.y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Balls + names
   const r = board.ballR;
+  const pad = Math.round(r * 1.9);
   for (const { body, player } of balls) {
-    const bg = getEmojiBgColor(player.emoji);
-    const grad = ctx.createRadialGradient(
-      body.position.x - r * 0.3,
-      body.position.y - r * 0.3,
-      r * 0.15,
-      body.position.x,
-      body.position.y,
-      r
-    );
-    grad.addColorStop(0, lighten(bg, 60));
-    grad.addColorStop(0.7, bg);
-    grad.addColorStop(1, darken(bg, 40));
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(body.position.x, body.position.y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    const color = getEmojiBgColor(player.emoji);
+    const cx = body.position.x;
+    const cy = body.position.y;
 
-    const emoji = getEmoji(player.emoji);
-    const emojiSize = Math.round(r * 1.3);
-    ctx.font = `${emojiSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#000";
-    ctx.fillText(emoji, body.position.x, body.position.y + 1);
+    ctx.drawImage(getMiniBallSprite(player.emoji, color, r), cx - pad, cy - pad);
 
     if (player.name) {
       ctx.font = `bold ${Math.max(11, Math.round(r * 0.9))}px sans-serif`;
+      ctx.textAlign = "center";
       ctx.textBaseline = "top";
+      ctx.lineWidth = Math.max(2, r * 0.18);
+      ctx.strokeStyle = "rgba(0,0,0,0.85)";
+      ctx.strokeText(player.name, cx, cy + r + 4);
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(player.name, body.position.x, body.position.y + r + 4);
+      ctx.fillText(player.name, cx, cy + r + 4);
     }
   }
 }
 
-function lighten(hex: string, amount: number): string {
-  return adjust(hex, amount);
-}
-function darken(hex: string, amount: number): string {
-  return adjust(hex, -amount);
-}
-function adjust(hex: string, amount: number): string {
+function hexToRgba(hex: string, alpha: number): string {
   const num = parseInt(hex.replace("#", ""), 16);
-  const r = Math.min(255, Math.max(0, ((num >> 16) & 0xff) + amount));
-  const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount));
-  const b = Math.min(255, Math.max(0, (num & 0xff) + amount));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+  const r = (num >> 16) & 0xff;
+  const g = (num >> 8) & 0xff;
+  const b = num & 0xff;
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 export default function LobbyDemoCanvas({ players }: LobbyDemoCanvasProps) {
@@ -316,7 +413,7 @@ export default function LobbyDemoCanvas({ players }: LobbyDemoCanvasProps) {
     <canvas
       ref={canvasRef}
       className="block"
-      style={{ background: "#0F172A" }}
+      style={{ background: "#05060f" }}
     />
   );
 }

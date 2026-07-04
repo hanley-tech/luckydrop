@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import JoinForm from "@/components/mobile/JoinForm";
 import WaitingScreen from "@/components/mobile/WaitingScreen";
+import ConnectionIndicator from "@/components/ConnectionIndicator";
 import { getSocket } from "@/lib/socket";
 import { S2C } from "@/lib/socketEvents";
 import type { Player, GameState } from "@/types";
@@ -23,6 +24,10 @@ export default function JoinPage() {
   const [isEliminated, setIsEliminated] = useState(false);
   const [isWinner, setIsWinner] = useState(false);
   const [nameCheckEnabled, setNameCheckEnabled] = useState(false);
+
+  useEffect(() => {
+    document.title = "Join · LuckyDrop";
+  }, []);
 
   useEffect(() => {
     const socket = getSocket();
@@ -112,6 +117,7 @@ export default function JoinPage() {
 
   return (
     <main className="min-h-dvh bg-[#0F172A] flex flex-col items-center justify-center px-6 py-10">
+      <ConnectionIndicator corner="top-right" />
       <h1 className="text-3xl font-extrabold text-white mb-8 tracking-tight">
         Lucky Drop
       </h1>

@@ -78,6 +78,15 @@ export function setupSocketHandlers(io: Server): void {
       io.emit(S2C.LEVEL_CHANGED, { levelId: gameState.getState().levelId });
     });
 
+    // Operator sets how many prize winners (podium size) for the next match
+    socket.on(C2S.OPERATOR_SET_WINNER_COUNT, (data: { winnerCount: number }) => {
+      if (typeof data?.winnerCount !== "number") return;
+      gameState.setWinnerCount(data.winnerCount);
+      io.emit(S2C.WINNER_COUNT_CHANGED, {
+        winnerCount: gameState.getState().winnerCount,
+      });
+    });
+
     // Display reports round result
     socket.on(C2S.ROUND_RESULT, (data: { advancedIds: string[]; eliminatedIds: string[] }) => {
       const result = gameState.reportRoundResult(data.advancedIds, data.eliminatedIds);

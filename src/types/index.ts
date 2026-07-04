@@ -26,6 +26,8 @@ export interface GameState {
   winner: Player | null;
   nameCheckEnabled: boolean;
   levelId: LevelId;
+  /** How many top places to celebrate as prize winners (podium size). */
+  winnerCount: number;
 }
 
 export interface JoinRequest {

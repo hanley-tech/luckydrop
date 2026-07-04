@@ -7,6 +7,7 @@ import { GameState, Player, LevelId } from "@/types";
 import { getEmoji } from "@/lib/emojis";
 import ControlPanel from "@/components/operator/ControlPanel";
 import DebugTools from "@/components/operator/DebugTools";
+import ConnectionIndicator from "@/components/ConnectionIndicator";
 
 const defaultGameState: GameState = {
   phase: "lobby",
@@ -16,10 +17,15 @@ const defaultGameState: GameState = {
   winner: null,
   nameCheckEnabled: false,
   levelId: "classic",
+  winnerCount: 1,
 };
 
 export default function OperatorPage() {
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
+
+  useEffect(() => {
+    document.title = "Operator · LuckyDrop";
+  }, []);
 
   useEffect(() => {
     const socket = getSocket();
@@ -78,6 +84,10 @@ export default function OperatorPage() {
       setGameState((prev) => ({ ...prev, levelId: data.levelId }));
     });
 
+    socket.on(S2C.WINNER_COUNT_CHANGED, (data: { winnerCount: number }) => {
+      setGameState((prev) => ({ ...prev, winnerCount: data.winnerCount }));
+    });
+
     return () => {
       socket.off(S2C.GAME_STATE_SYNC);
       socket.off(S2C.PLAYER_LIST);
@@ -88,6 +98,7 @@ export default function OperatorPage() {
       socket.off(S2C.GAME_RESET);
       socket.off(S2C.NAME_CHECK_STATUS);
       socket.off(S2C.LEVEL_CHANGED);
+      socket.off(S2C.WINNER_COUNT_CHANGED);
     };
   }, []);
 
@@ -126,8 +137,14 @@ export default function OperatorPage() {
     socket.emit(C2S.OPERATOR_SET_LEVEL, { levelId });
   };
 
+  const handleSetWinnerCount = (winnerCount: number) => {
+    const socket = getSocket();
+    socket.emit(C2S.OPERATOR_SET_WINNER_COUNT, { winnerCount });
+  };
+
   return (
     <div className="min-h-screen bg-[#0F172A] p-6">
+      <ConnectionIndicator corner="top-right" />
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-4xl font-black text-white">
           Operator Panel
@@ -139,6 +156,7 @@ export default function OperatorPage() {
           onReset={handleReset}
           onRestartMatch={handleRestartMatch}
           onSetLevel={handleSetLevel}
+          onSetWinnerCount={handleSetWinnerCount}
         />
 
         <DebugTools

@@ -23,6 +23,7 @@ export class GameStateManager {
       winner: null,
       nameCheckEnabled: false,
       levelId: "classic",
+      winnerCount: 1,
     };
   }
 
@@ -30,6 +31,12 @@ export class GameStateManager {
     // Only allow level change while in lobby — committed once the match starts
     if (this.state.phase !== "lobby") return;
     this.state.levelId = levelId;
+  }
+
+  setWinnerCount(count: number): void {
+    // Only adjustable in lobby; clamp to a sane podium range
+    if (this.state.phase !== "lobby") return;
+    this.state.winnerCount = Math.max(1, Math.min(5, Math.round(count)));
   }
 
   getState(): GameState {

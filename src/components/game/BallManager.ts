@@ -32,22 +32,13 @@ export class BallManager {
    * of the board with slight random jitter so everyone has the same chance.
    */
   createBalls(players: Player[], boardWidth: number): void {
-    const centerX = boardWidth / 2;
     this._ballRadius = ballRadius(boardWidth);
     const r = this._ballRadius;
-
-    // Scale spawn area with player count so balls don't pile up
     const count = players.length;
-    const xSpread = Math.min(boardWidth * 0.6, Math.max(60, count * 2));
-    const yWaves = Math.ceil(count / 20); // ~20 balls per wave
-    const ySpacing = Math.max(30, r * 3);
 
     for (let i = 0; i < count; i++) {
       const player = players[i];
-      const wave = Math.floor(i / 20);
-      const posJitter = (Math.random() - 0.5) * xSpread;
-      const x = centerX + posJitter;
-      const y = 20 + wave * ySpacing + Math.random() * ySpacing * 0.8;
+      const { x, y } = this.spawnXY(i, count, boardWidth);
 
       const body = Matter.Bodies.circle(x, y, r, {
         restitution: 0.6,
@@ -67,6 +58,24 @@ export class BallManager {
       Matter.World.add(this.engine.world, body);
       this.ballMap.set(body.id, { body, player });
     }
+  }
+
+  /**
+   * Spawn position for ball #i of `count`: a compact grid near the top — wide
+   * horizontally, short vertically. Balls don't collide with each other (only
+   * pegs), so tight packing just overlaps for a frame and clears as they fall,
+   * instead of dropping from a very tall column with big fields.
+   */
+  private spawnXY(i: number, count: number, boardWidth: number): { x: number; y: number } {
+    const r = this._ballRadius;
+    const centerX = boardWidth / 2;
+    const xSpread = Math.min(boardWidth * 0.72, Math.max(80, count * r * 0.45));
+    const perRow = Math.max(1, Math.floor(xSpread / Math.max(1, r * 1.1)));
+    const ySpacing = Math.max(18, Math.round(r * 1.3));
+    const row = Math.floor(i / perRow);
+    const x = centerX + (Math.random() - 0.5) * xSpread;
+    const y = 16 + row * ySpacing + Math.random() * ySpacing * 0.5;
+    return { x, y };
   }
 
   /** Return all ball bodies currently in the simulation. */
@@ -98,19 +107,12 @@ export class BallManager {
    * Move all remaining balls back to center of the board for the next round.
    */
   resetBallPositions(boardWidth: number): void {
-    const centerX = boardWidth / 2;
     const entries = Array.from(this.ballMap.values());
-
     const count = entries.length;
-    const xSpread = Math.min(boardWidth * 0.6, Math.max(60, count * 2));
-    const ySpacing = Math.max(30, this._ballRadius * 3);
 
     for (let i = 0; i < count; i++) {
       const { body } = entries[i];
-      const wave = Math.floor(i / 20);
-      const posJitter = (Math.random() - 0.5) * xSpread;
-      const x = centerX + posJitter;
-      const y = 20 + wave * ySpacing + Math.random() * ySpacing * 0.8;
+      const { x, y } = this.spawnXY(i, count, boardWidth);
 
       Matter.Body.setPosition(body, { x, y });
       Matter.Body.setVelocity(body, {

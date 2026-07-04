@@ -5,6 +5,7 @@ export const C2S = {
   OPERATOR_RESET: "operator-reset",
   OPERATOR_RESTART_MATCH: "operator-restart-match",
   OPERATOR_SET_LEVEL: "operator-set-level",
+  OPERATOR_SET_WINNER_COUNT: "operator-set-winner-count",
   DEBUG_ADD_USERS: "debug-add-users",
   DEBUG_TOGGLE_NAMECHECK: "debug-toggle-namecheck",
   REMOVE_PLAYER: "remove-player",
@@ -26,4 +27,5 @@ export const S2C = {
   GAME_STATE_SYNC: "game-state-sync",
   NAME_CHECK_STATUS: "name-check-status",
   LEVEL_CHANGED: "level-changed",
+  WINNER_COUNT_CHANGED: "winner-count-changed",
 } as const;

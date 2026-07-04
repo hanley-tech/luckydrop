@@ -9,7 +9,10 @@ interface ControlPanelProps {
   onReset: () => void;
   onRestartMatch: () => void;
   onSetLevel: (levelId: LevelId) => void;
+  onSetWinnerCount: (count: number) => void;
 }
+
+const WINNER_COUNT_OPTIONS = [1, 2, 3, 4, 5];
 
 export default function ControlPanel({
   gameState,
@@ -17,8 +20,9 @@ export default function ControlPanel({
   onReset,
   onRestartMatch,
   onSetLevel,
+  onSetWinnerCount,
 }: ControlPanelProps) {
-  const { phase, players, activePlayers, round, levelId } = gameState;
+  const { phase, players, activePlayers, round, levelId, winnerCount } = gameState;
   const canStart = phase === "lobby" && players.length > 0;
   const canRestart = phase !== "lobby";
   const canChangeLevel = phase === "lobby";
@@ -81,6 +85,36 @@ export default function ControlPanel({
             Locked while a match is in progress. Restart match to switch levels.
           </p>
         )}
+      </div>
+
+      {/* Winner count (prizes) picker */}
+      <div className="bg-slate-900 rounded-lg p-4 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm text-slate-400 uppercase tracking-wide">
+            Prize winners
+          </label>
+          <div className="flex gap-2">
+            {WINNER_COUNT_OPTIONS.map((n) => (
+              <button
+                key={n}
+                onClick={() => onSetWinnerCount(n)}
+                disabled={!canChangeLevel}
+                className={`w-12 py-2 rounded-lg font-bold border transition-all ${
+                  winnerCount === n
+                    ? "bg-pink-600 border-pink-400 text-white shadow-lg shadow-pink-600/30"
+                    : "bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-500"
+                } ${canChangeLevel ? "cursor-pointer" : "opacity-60 cursor-not-allowed"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-slate-500">
+          {winnerCount === 1
+            ? "Single champion + 5 runners-up shown at the finish."
+            : `Top ${winnerCount} on the podium + 5 runners-up shown at the finish.`}
+        </p>
       </div>
 
       {/* Action buttons */}

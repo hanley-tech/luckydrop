@@ -13,11 +13,15 @@ No app install. No sign-up. Just scan, drop, and win.
 ### Why LuckyDrop?
 
 - **Instant engagement** — Attendees scan a QR code and they're in. No downloads, no accounts.
+- **Neon spectacle** — A glowing "Geometry Wars"-style board: animated grid, bloom pegs, per-player neon balls with motion trails, particle bursts, and star explosions in the win zone.
+- **Cinematic moments** — Automatic slow-motion with camera push-in and screen shake for the big beats: the winning drop, the first ball into the win zone, and near-misses.
 - **Real physics** — Matter.js powers the Plinko board. Every drop is different. Every round is suspenseful.
-- **Built for the big screen** — Designed for projectors and TVs at 16:9. Looks great in any venue.
-- **Audio experience** — TTS announcements, sound effects, and background music keep the energy high.
-- **Operator control** — Run the show from your phone. Start rounds, remove players, restart matches.
-- **Battle-tested** — Tested with 80 players on a MacBook Air M2. Used at live events. It hits.
+- **Dynamic audio** — Synthesized techno sound effects (peg pings, explosions, win chimes — no files required), plus TTS announcements and background music that speeds up with a tension pulse as the field narrows to the final few.
+- **Pick your prizes** — Award 1 to 5 winners; the finish shows a ranked podium (gold/silver/bronze) plus runners-up.
+- **Multiple boards** — *Classic*, *Cannon Crossfire*, and *Lunch Tray* levels change the obstacles and the chaos.
+- **Works on any screen** — Designed for projectors and TVs at 16:9 (4K-ready). Emojis render as bundled images, so they show even on machines whose OS emoji font doesn't draw to canvas.
+- **Operator control** — Run the show from your phone. Start rounds, set the winner count and level, remove players, restart matches.
+- **Resilient** — The display auto-reconnects after the machine sleeps or the network blips, with a live connection indicator so you always know its status.
 - **Self-hosted & free** — Run it on your own machine. No subscriptions, no vendor lock-in.
 
 ## Quick Start
@@ -88,9 +92,9 @@ stateDiagram-v2
 ```
 
 1. Show the display screen and let players scan the QR code to join
-2. The operator starts the game — all player balls drop through the Plinko board
-3. Balls that land in the center "WIN" zone advance; others are eliminated
-4. Rounds repeat with remaining players until one winner remains
+2. The operator (optionally) picks a **level** and how many **prize winners** to award, then starts the game — all player balls drop through the Plinko board
+3. The instant a ball reaches the bottom, it's decided: land in the center "WIN" zone to advance (star burst), otherwise you explode and are out
+4. Rounds repeat with remaining players until a champion is crowned; the finish shows the ranked **podium** (top N winners) plus runners-up
 
 ## User Guide
 
@@ -113,10 +117,12 @@ stateDiagram-v2
 
 #### Operator Controls
 
-| Button | What it does |
+| Control | What it does |
 |--------|-------------|
+| **Level** (lobby only) | Choose the board: Classic, Cannon Crossfire, or Lunch Tray |
+| **Prize winners** (lobby only) | Set how many top places to celebrate (1–5) — the podium size at the finish |
 | **Start Game** | Begins round 1 (only available in lobby with players) |
-| **Restart Match** | Returns to lobby, keeps all players for another round |
+| **Restart Match** | Returns to lobby, keeps all players for another round (resets the soundtrack) |
 | **Reset All** | Clears everything — players, scores, game state |
 | **Remove** (per player) | Removes a specific player from the game |
 
@@ -124,8 +130,8 @@ stateDiagram-v2
 
 The operator panel includes debug tools for testing:
 
-- **Add 40 Test Users** — Populates the game with fake players
-- **Name Check toggle** — Enables/disables OpenAI name moderation (requires `OPENAI_API_KEY`)
+- **Add 5 / Add 40 Test Users** — Populates the game with fake players
+- **Name Check toggle** — Enables/disables OpenAI name moderation (requires a funded `OPENAI_API_KEY`; off by default)
 
 ### For Players
 
@@ -139,10 +145,11 @@ The operator panel includes debug tools for testing:
 ### Tips for a Great Draw
 
 - **Network**: The display machine and players' phones need to be on the same WiFi network
-- **Audio**: Click anywhere on the display to unlock audio — the app has TTS announcements, sound effects, and background music. Use the speaker button (bottom-right) to mute/unmute.
+- **Audio**: The display shows a one-time **"Tap to enable sound"** overlay — click it once at the start (browsers block autoplay until a click). After that, sound effects and music play for the whole session. Use the speaker button (bottom-right) to mute/unmute. Core sound effects are synthesized in the browser, so they work even with no audio files installed.
+- **Connectivity**: A small dot (bottom-left on the display) shows connection status — green when connected, a red "Reconnecting…" pill if the socket drops. The display self-heals after the machine sleeps or the network blips; no refresh needed.
 - **Sizing**: The display is designed for 16:9 screens and scales proportionally. Works best on a projector or TV.
-- **Player count**: Tested with 80 concurrent players on a MacBook Air M2 16GB. Elimination narrows the field fast so rounds stay exciting.
-- **Name moderation**: For public events, set an `OPENAI_API_KEY` and enable name checking from the operator panel to filter inappropriate names.
+- **Player count**: Comfortably runs 80+ concurrent players; the neon board and emoji balls are pre-baked into sprites so the frame rate holds up. Elimination narrows the field fast so rounds stay exciting.
+- **Name moderation**: For public events, set a funded `OPENAI_API_KEY` and enable name checking from the operator panel to filter inappropriate names. Without it, name checking is off and all (length-valid, non-duplicate) names are accepted.
 
 ## Setup
 
@@ -167,9 +174,9 @@ Name moderation uses OpenAI to filter inappropriate player names. If no API key 
 
 ### Sound Files
 
-Sound files are **not included** in this repo (they aren't licensed for redistribution). The app works fine without them — you'll just get TTS announcements only.
+The game's **sound effects are synthesized in the browser** (Web Audio) and need no files. What *does* use files is **background music** and, optionally, richer file-based SFX — and those `.mp3`s are **not included** in this repo (licensing). Without them you still get the synth SFX + TTS announcements; you just won't have background music.
 
-To add sounds, place `.mp3` files in `public/sounds/` and edit `public/sounds/sounds.json` to map each event to your file:
+To add music/SFX files, place `.mp3` files in `public/sounds/` and edit `public/sounds/sounds.json` to map each event to your file:
 
 ```json
 {
@@ -235,8 +242,12 @@ LuckyDrop requires a **persistent Node.js server** for WebSocket connections, so
 ## Tech Stack
 
 - **Next.js 14** — React framework with App Router
-- **Socket.IO** — Real-time WebSocket communication
+- **Socket.IO** — Real-time WebSocket communication (with auto-reconnect)
 - **Matter.js** — 2D physics engine for the Plinko board
+- **Canvas 2D** — Neon board rendering, cached sprites, particle systems, and the cinematic slow-mo camera
+- **Web Audio API** — Synthesized techno sound effects and dynamic music tempo/pulse
+- **Twemoji** — Bundled emoji images so avatars render on any device
+- **canvas-confetti** — Winner celebration
 - **Tailwind CSS** — Styling
 - **OpenAI API** — Optional name moderation
 

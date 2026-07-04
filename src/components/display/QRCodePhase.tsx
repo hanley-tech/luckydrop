@@ -31,7 +31,7 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
       </div>
 
       {/* Center column: title + QR + count — only as wide as it needs to be */}
-      <div className="shrink-0 flex flex-col items-center justify-center gap-6 px-40">
+      <div className="shrink-0 flex flex-col items-center justify-center gap-6 px-20">
         <h1 className="text-[5rem] font-black text-white tracking-tight leading-none text-center">
           Lucky
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
@@ -43,7 +43,7 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
           {joinUrl && (
             <QRCodeSVG
               value={joinUrl}
-              size={420}
+              size={840}
               bgColor="#FFFFFF"
               fgColor="#0F172A"
               level="H"

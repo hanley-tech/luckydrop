@@ -43,3 +43,7 @@ next-env.d.ts
 public/sounds/*
 !public/sounds/.gitkeep
 !public/sounds/sounds.json
+
+# Dev screenshots & browser-automation scratch (root-level only)
+/*.png
+.playwright-mcp/

@@ -8,6 +8,7 @@ import QRCodePhase from "@/components/display/QRCodePhase";
 import GamePhaseComponent from "@/components/display/GamePhase";
 import WinnerPhase from "@/components/display/WinnerPhase";
 import DisplayFrame from "@/components/display/DisplayFrame";
+import ConnectionIndicator from "@/components/ConnectionIndicator";
 import {
   announcePlayerJoined,
   announceGameStart,
@@ -23,8 +24,11 @@ import {
   setSFXEnabled,
   setMusicEnabled,
   playMusic,
+  preloadAudioAssets,
+  resetMatchIntensity,
   isTTSEnabled,
 } from "@/lib/audio";
+import { preloadEmojiImages } from "@/lib/emojiImages";
 
 function AudioToggle() {
   const [muted, setMuted] = useState(false);
@@ -55,7 +59,45 @@ export default function DisplayPage() {
     "dropping"
   );
   const [levelId, setLevelId] = useState<LevelId>("classic");
+  const [winnerCount, setWinnerCount] = useState(1);
+  const [audioReady, setAudioReady] = useState(false);
   const audioUnlocked = useRef(false);
+
+  // Keep latest phase in a ref so the (mount-only) interaction listener can
+  // start the correct track instead of always forcing lobby music.
+  const phaseRef = useRef<GamePhase>(phase);
+  phaseRef.current = phase;
+
+  // When the game returns to the lobby (e.g. operator "Restart Match", which
+  // arrives as a state-sync rather than a dedicated event), reset the
+  // soundtrack: back to lobby music, normal tempo, no tension pulse.
+  const prevPhaseRef = useRef<GamePhase>(phase);
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = phase;
+    if (phase === "lobby" && prev !== "lobby") {
+      resetMatchIntensity();
+      playMusic("lobby");
+    }
+  }, [phase]);
+
+  // Reflect game phase in the browser tab title
+  useEffect(() => {
+    document.title =
+      phase === "winner" && winner
+        ? `🏆 ${winner.name} wins! · LuckyDrop`
+        : phase === "dropping" || phase === "recycling"
+        ? `Round ${round} · LuckyDrop`
+        : "LuckyDrop";
+  }, [phase, round, winner]);
+
+  // Preload sound config + assets up front so the first click can start music
+  // synchronously (within the gesture window). Also warm the emoji images so
+  // the canvas can draw them immediately.
+  useEffect(() => {
+    preloadAudioAssets();
+    preloadEmojiImages();
+  }, []);
 
   // Unlock audio on first user interaction (browser requirement)
   useEffect(() => {
@@ -64,8 +106,12 @@ export default function DisplayPage() {
         unlockAudio();
         audioUnlocked.current = true;
       }
-      // Always try to start music for current phase on interaction
-      playMusic("lobby");
+      setAudioReady(true);
+      // Start (or resume) the track that matches the current phase
+      const p = phaseRef.current;
+      playMusic(
+        p === "winner" ? "winner" : p === "lobby" ? "lobby" : "game"
+      );
     };
     window.addEventListener("click", handleInteraction);
     window.addEventListener("keydown", handleInteraction);
@@ -85,6 +131,7 @@ export default function DisplayPage() {
       setRound(state.round);
       setWinner(state.winner);
       setLevelId(state.levelId ?? "classic");
+      setWinnerCount(state.winnerCount ?? 1);
       if (state.phase === "recycling") {
         setDropPhase("recycling");
       } else if (state.phase === "dropping") {
@@ -94,6 +141,10 @@ export default function DisplayPage() {
 
     socket.on(S2C.LEVEL_CHANGED, (data: { levelId: LevelId }) => {
       setLevelId(data.levelId);
+    });
+
+    socket.on(S2C.WINNER_COUNT_CHANGED, (data: { winnerCount: number }) => {
+      setWinnerCount(data.winnerCount);
     });
 
     // Player events
@@ -206,6 +257,7 @@ export default function DisplayPage() {
       socket.off(S2C.WINNER);
       socket.off(S2C.GAME_RESET);
       socket.off(S2C.LEVEL_CHANGED);
+      socket.off(S2C.WINNER_COUNT_CHANGED);
     };
   }, []);
 
@@ -224,7 +276,7 @@ export default function DisplayPage() {
   // Render based on current phase
   let content;
   if (phase === "winner" && winner) {
-    content = <WinnerPhase winner={winner} players={players} />;
+    content = <WinnerPhase winner={winner} players={players} winnerCount={winnerCount} />;
   } else if (phase === "dropping" || phase === "recycling") {
     content = (
       <GamePhaseComponent
@@ -244,6 +296,27 @@ export default function DisplayPage() {
       <DisplayFrame>{content}</DisplayFrame>
       {/* Floating mute button — outside the frame so it stays at real viewport size */}
       <AudioToggle />
+      <ConnectionIndicator corner="bottom-left" />
+      {/* One-time gesture to unlock audio (browsers block autoplay until a
+          click). Crucial for kiosk displays driven from another device. */}
+      {!audioReady && (
+        <button
+          onClick={() => {
+            if (!audioUnlocked.current) {
+              unlockAudio();
+              audioUnlocked.current = true;
+            }
+            setAudioReady(true);
+            const p = phaseRef.current;
+            playMusic(p === "winner" ? "winner" : p === "lobby" ? "lobby" : "game");
+          }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-black/80 backdrop-blur-sm text-white cursor-pointer"
+        >
+          <span className="text-8xl animate-pulse">{"\u{1F50A}"}</span>
+          <span className="text-4xl font-black tracking-wide">Tap to enable sound</span>
+          <span className="text-xl text-slate-400">Click anywhere on this screen to start the music & effects</span>
+        </button>
+      )}
     </>
   );
 }

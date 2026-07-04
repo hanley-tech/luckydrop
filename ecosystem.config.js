@@ -1,12 +1,38 @@
 const path = require("path");
 const os = require("os");
+const fs = require("fs");
 
-// Load .env.local if dotenv is available, otherwise fall back to process.env
-try {
-  require("dotenv").config({ path: path.join(__dirname, ".env.local") });
-} catch {
-  // dotenv not installed — use process.env directly
-}
+// Load .env.local into process.env. Prefer dotenv if present, but fall back to
+// a tiny built-in parser so we DON'T depend on dotenv being installed — a
+// missing base path here makes Next serve at "/" and every proxied route 404s.
+(function loadEnvLocal() {
+  const envPath = path.join(__dirname, ".env.local");
+  try {
+    require("dotenv").config({ path: envPath });
+    return;
+  } catch {
+    // dotenv not installed — parse manually below
+  }
+  try {
+    const txt = fs.readFileSync(envPath, "utf8");
+    for (const raw of txt.split("\n")) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) continue;
+      const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+      if (!m) continue;
+      let val = m[2].trim();
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[m[1]] === undefined) process.env[m[1]] = val;
+    }
+  } catch {
+    // no .env.local — rely on process.env
+  }
+})();
 
 const remotePath = process.env.DEPLOY_REMOTE_PATH || __dirname;
 const port = process.env.PORT || "3003";
