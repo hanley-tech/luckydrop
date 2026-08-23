@@ -14,6 +14,18 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Load .env.local, the same file ecosystem.config.js reads for pm2. Without it
+# NEXT_PUBLIC_BASE_PATH is unset at runtime and server.ts mounts socket.io at
+# /socket.io/ instead of <basePath>/socket.io/ — while the pages keep working,
+# because their basePath was baked in at build time. The result is pages that
+# load fine and a WebSocket that 502s. PORT would be wrong here too.
+if [ -f "$DIR/.env.local" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$DIR/.env.local"
+  set +a
+fi
 PIDFILE="$DIR/.luckydrop.pid"
 LOGFILE="$DIR/.luckydrop.log"
 PORT="${PORT:-3000}"
