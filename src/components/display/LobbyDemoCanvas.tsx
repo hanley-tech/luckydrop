@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { Player } from "@/types";
+import { tr } from "@/lib/i18n";
 import { BALL_EMOJIS, getEmoji, getEmojiBgColor } from "@/lib/emojis";
 import { getEmojiImage } from "@/lib/emojiImages";
 import * as PhysicsEngine from "@/components/game/PhysicsEngine";
@@ -236,15 +237,22 @@ function drawMiniBoard(
 
     ctx.drawImage(getMiniBallSprite(player.emoji, color, r), cx - pad, cy - pad);
 
-    if (player.name) {
+    // Dummy balls are labelled from the dictionary at draw time, so flipping
+    // language updates them on the next frame instead of needing the demo
+    // (and its physics world) to be torn down and rebuilt.
+    const label = player.id.startsWith("dummy-")
+      ? tr("lobby.demoName")
+      : player.name;
+
+    if (label) {
       ctx.font = `bold ${Math.max(11, Math.round(r * 0.9))}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       ctx.lineWidth = Math.max(2, r * 0.18);
       ctx.strokeStyle = "rgba(0,0,0,0.85)";
-      ctx.strokeText(player.name, cx, cy + r + 4);
+      ctx.strokeText(label, cx, cy + r + 4);
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(player.name, cx, cy + r + 4);
+      ctx.fillText(label, cx, cy + r + 4);
     }
   }
 }

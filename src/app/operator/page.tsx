@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang, useServerLang } from "@/lib/i18n";
 import { getSocket } from "@/lib/socket";
 import { C2S, S2C } from "@/lib/socketEvents";
-import { GameState, Player, LevelId } from "@/types";
+import { GameState, Player, LevelId, Lang } from "@/types";
 import { getEmoji } from "@/lib/emojis";
 import ControlPanel from "@/components/operator/ControlPanel";
 import DebugTools from "@/components/operator/DebugTools";
@@ -18,10 +19,13 @@ const defaultGameState: GameState = {
   nameCheckEnabled: false,
   levelId: "classic",
   winnerCount: 1,
+  lang: "zh",
 };
 
 export default function OperatorPage() {
+  const { t } = useLang();
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
+  useServerLang();
 
   useEffect(() => {
     document.title = "Operator · LuckyDrop";
@@ -142,13 +146,18 @@ export default function OperatorPage() {
     socket.emit(C2S.OPERATOR_SET_WINNER_COUNT, { winnerCount });
   };
 
+  // Emit only — the panel re-renders when the server echoes LANG_CHANGED back,
+  // so what the operator sees is what every other screen actually got.
+  const handleSetLang = (lang: Lang) => {
+    const socket = getSocket();
+    socket.emit(C2S.OPERATOR_SET_LANG, { lang });
+  };
+
   return (
     <div className="min-h-screen bg-[#0F172A] p-6">
       <ConnectionIndicator corner="top-right" />
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-4xl font-black text-white">
-          Operator Panel
-        </h1>
+        <h1 className="text-4xl font-black text-white">{t("op.title")}</h1>
 
         <ControlPanel
           gameState={gameState}
@@ -157,6 +166,7 @@ export default function OperatorPage() {
           onRestartMatch={handleRestartMatch}
           onSetLevel={handleSetLevel}
           onSetWinnerCount={handleSetWinnerCount}
+          onSetLang={handleSetLang}
         />
 
         <DebugTools
@@ -168,11 +178,11 @@ export default function OperatorPage() {
         {/* Player list */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h2 className="text-2xl font-bold text-white mb-4">
-            Players ({gameState.players.length})
+            {t("op.players")} ({gameState.players.length})
           </h2>
           {gameState.players.length === 0 ? (
             <p className="text-slate-500 text-lg">
-              No players have joined yet.
+              {t("op.noPlayers")}
             </p>
           ) : (
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
@@ -202,9 +212,9 @@ export default function OperatorPage() {
                   <button
                     onClick={() => handleRemovePlayer(player.id)}
                     className="ml-auto text-xs text-red-400 hover:text-red-300 hover:bg-red-500/20 px-2 py-1 rounded transition-colors shrink-0"
-                    title={`Remove ${player.name}`}
+                    title={`${t("op.remove")} ${player.name}`}
                   >
-                    Remove
+                    {t("op.remove")}
                   </button>
                 </div>
               ))}

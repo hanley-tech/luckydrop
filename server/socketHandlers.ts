@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { GameStateManager } from "../src/lib/gameState";
 import { C2S, S2C } from "../src/lib/socketEvents";
-import { JoinRequest, EmojiId, LevelId } from "../src/types";
+import { JoinRequest, EmojiId, LevelId, Lang } from "../src/types";
 
 export function setupSocketHandlers(io: Server): void {
   const gameState = new GameStateManager();
@@ -85,6 +85,13 @@ export function setupSocketHandlers(io: Server): void {
       io.emit(S2C.WINNER_COUNT_CHANGED, {
         winnerCount: gameState.getState().winnerCount,
       });
+    });
+
+    // Operator sets the language for every connected screen
+    socket.on(C2S.OPERATOR_SET_LANG, (data: { lang: Lang }) => {
+      if (!data?.lang) return;
+      gameState.setLang(data.lang);
+      io.emit(S2C.LANG_CHANGED, { lang: gameState.getState().lang });
     });
 
     // Display reports round result

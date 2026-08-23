@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useLang } from "@/lib/i18n";
 import confetti from "canvas-confetti";
 import { Player } from "@/types";
 import { getEmoji } from "@/lib/emojis";
@@ -40,11 +41,12 @@ const PLACE_ACCENTS = [
 ];
 
 function RunnersUp({ players, startPlace }: { players: Player[]; startPlace: number }) {
+  const { t } = useLang();
   if (players.length === 0) return null;
   return (
     <div className="absolute left-0 right-0 bottom-[5%] flex flex-col items-center gap-6">
       <p className="text-3xl font-bold uppercase tracking-[0.35em] text-slate-400">
-        Runners-up
+        {t("winner.runnersUp")}
       </p>
       <div className="flex items-center justify-center gap-12 flex-wrap px-12">
         {players.map((p, idx) => {
@@ -65,6 +67,7 @@ function RunnersUp({ players, startPlace }: { players: Player[]; startPlace: num
 }
 
 export default function WinnerPhase({ winner, players, winnerCount = 1 }: WinnerPhaseProps) {
+  const { t } = useLang();
   const podiumSize = Math.max(1, winnerCount);
 
   useEffect(() => {
@@ -132,7 +135,7 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
       <Shell>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-12 pb-[18%]">
           <h1 className="text-[12rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 animate-bounce tracking-wider leading-none">
-            WINNER!
+            {t("winner.title")}
           </h1>
           <div className="text-[14rem] leading-none">{emoji}</div>
           <p className="text-[7rem] font-black text-white text-center leading-tight">

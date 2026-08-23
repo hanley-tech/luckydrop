@@ -1,6 +1,7 @@
 "use client";
 
-import { GameState, LevelId } from "@/types";
+import { GameState, LevelId, Lang } from "@/types";
+import { useLang } from "@/lib/i18n";
 import { LEVELS, LEVEL_ORDER } from "@/components/game/levels";
 
 interface ControlPanelProps {
@@ -10,9 +11,14 @@ interface ControlPanelProps {
   onRestartMatch: () => void;
   onSetLevel: (levelId: LevelId) => void;
   onSetWinnerCount: (count: number) => void;
+  onSetLang: (lang: Lang) => void;
 }
 
 const WINNER_COUNT_OPTIONS = [1, 2, 3, 4, 5];
+const LANG_OPTIONS: { id: Lang; label: string }[] = [
+  { id: "zh", label: "中文" },
+  { id: "en", label: "English" },
+];
 
 export default function ControlPanel({
   gameState,
@@ -21,8 +27,10 @@ export default function ControlPanel({
   onRestartMatch,
   onSetLevel,
   onSetWinnerCount,
+  onSetLang,
 }: ControlPanelProps) {
-  const { phase, players, activePlayers, round, levelId, winnerCount } = gameState;
+  const { t } = useLang();
+  const { phase, players, activePlayers, round, levelId, winnerCount, lang } = gameState;
   const canStart = phase === "lobby" && players.length > 0;
   const canRestart = phase !== "lobby";
   const canChangeLevel = phase === "lobby";
@@ -30,27 +38,27 @@ export default function ControlPanel({
 
   return (
     <div className="bg-slate-800 rounded-xl p-6 space-y-6 border border-slate-700">
-      <h2 className="text-2xl font-bold text-white">Game Control</h2>
+      <h2 className="text-2xl font-bold text-white">{t("op.gameControl")}</h2>
 
       {/* Status display */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-slate-900 rounded-lg p-4 text-center">
           <p className="text-sm text-slate-400 uppercase tracking-wide">
-            Phase
+            {t("op.phase")}
           </p>
           <p className="text-xl font-bold text-white capitalize mt-1">
-            {phase}
+            {t(`phase.${phase}`)}
           </p>
         </div>
         <div className="bg-slate-900 rounded-lg p-4 text-center">
           <p className="text-sm text-slate-400 uppercase tracking-wide">
-            Round
+            {t("op.round")}
           </p>
           <p className="text-xl font-bold text-white mt-1">{round}</p>
         </div>
         <div className="bg-slate-900 rounded-lg p-4 text-center">
           <p className="text-sm text-slate-400 uppercase tracking-wide">
-            Players
+            {t("op.players")}
           </p>
           <p className="text-xl font-bold text-white mt-1">
             {activePlayers.length} / {players.length}
@@ -62,7 +70,7 @@ export default function ControlPanel({
       <div className="bg-slate-900 rounded-lg p-4 space-y-2">
         <div className="flex items-center justify-between gap-3">
           <label className="text-sm text-slate-400 uppercase tracking-wide">
-            Level (next match)
+            {t("op.levelNext")}
           </label>
           <select
             value={levelId}
@@ -74,12 +82,12 @@ export default function ControlPanel({
           >
             {LEVEL_ORDER.map((id) => (
               <option key={id} value={id}>
-                {LEVELS[id].name}
+                {t(`level.${id}.name`)}
               </option>
             ))}
           </select>
         </div>
-        <p className="text-xs text-slate-500">{activeLevel.description}</p>
+        <p className="text-xs text-slate-500">{t(`level.${levelId}.desc`)}</p>
         {!canChangeLevel && (
           <p className="text-xs text-yellow-400">
             Locked while a match is in progress. Restart match to switch levels.
@@ -87,11 +95,38 @@ export default function ControlPanel({
         )}
       </div>
 
+      {/* Language — applies to the display and every attendee's phone.
+          Unlike level and podium size this stays enabled mid-match: it is
+          presentation only, and a room that needs English needs it now. */}
+      <div className="bg-slate-900 rounded-lg p-4 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <label className="text-sm text-slate-400 uppercase tracking-wide">
+            {t("op.language")}
+          </label>
+          <div className="flex gap-2">
+            {LANG_OPTIONS.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => onSetLang(o.id)}
+                className={`px-4 py-2 rounded-lg font-bold border transition-all cursor-pointer ${
+                  lang === o.id
+                    ? "bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-600/30"
+                    : "bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-500"
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-slate-500">{t("op.languageHint")}</p>
+      </div>
+
       {/* Winner count (prizes) picker */}
       <div className="bg-slate-900 rounded-lg p-4 space-y-2">
         <div className="flex items-center justify-between gap-3">
           <label className="text-sm text-slate-400 uppercase tracking-wide">
-            Prize winners
+            {t("op.prizeWinners")}
           </label>
           <div className="flex gap-2">
             {WINNER_COUNT_OPTIONS.map((n) => (
@@ -112,8 +147,8 @@ export default function ControlPanel({
         </div>
         <p className="text-xs text-slate-500">
           {winnerCount === 1
-            ? "Single champion + 5 runners-up shown at the finish."
-            : `Top ${winnerCount} on the podium + 5 runners-up shown at the finish.`}
+            ? t("op.winnerHint.one")
+            : t("op.winnerHint.many", { n: winnerCount })}
         </p>
       </div>
 
@@ -128,7 +163,7 @@ export default function ControlPanel({
               : "bg-slate-700 text-slate-500 cursor-not-allowed"
           }`}
         >
-          Start Game
+          {t("op.startGame")}
         </button>
         <button
           onClick={onRestartMatch}
@@ -139,18 +174,18 @@ export default function ControlPanel({
               : "bg-slate-700 text-slate-500 cursor-not-allowed"
           }`}
         >
-          Restart Match
+          {t("op.restartMatch")}
         </button>
         <button
           onClick={onReset}
           className="flex-1 py-4 px-6 rounded-xl text-xl font-bold bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30 active:scale-95 transition-all"
         >
-          Reset All
+          {t("op.resetAll")}
         </button>
       </div>
       <p className="text-sm text-slate-400">
-        <span className="text-yellow-400 font-semibold">Restart Match</span> — back to lobby, keep all players. {" "}
-        <span className="text-red-400 font-semibold">Reset All</span> — clears everything including players.
+        <span className="text-yellow-400 font-semibold">{t("op.footnote.restart")}</span>{t("op.footnote.restartDesc")}
+        <span className="text-red-400 font-semibold">{t("op.footnote.reset")}</span>{t("op.footnote.resetDesc")}
       </p>
     </div>
   );

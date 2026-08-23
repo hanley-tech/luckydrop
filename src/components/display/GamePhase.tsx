@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useLang } from "@/lib/i18n";
 
 import { Player, LevelId } from "@/types";
 import { getEmoji } from "@/lib/emojis";
@@ -100,6 +101,7 @@ export default function GamePhase({
   levelId,
   onRoundResult,
 }: GamePhaseProps) {
+  const { t } = useLang();
   const activePlayers = players.filter((p) => !p.eliminated);
   // Sort eliminated by rank: later round of elimination = higher in the list.
   // Within the same round, the ball that settled *last* ranks higher (it stayed
@@ -151,7 +153,7 @@ export default function GamePhase({
         <div className="w-[15%] bg-[#0B1120] border-r border-white/10 flex flex-col overflow-hidden shrink-0">
           <div className="px-6 py-6 border-b border-white/10">
             <p className="text-2xl font-bold text-green-400 uppercase tracking-wider">
-              Remaining
+              {t("game.remaining")}
             </p>
             <p className="text-7xl font-black text-white">
               {activePlayers.length}
@@ -179,10 +181,11 @@ export default function GamePhase({
           <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
             <div className="bg-black/60 backdrop-blur-md rounded-3xl px-14 py-5 border border-white/10">
               <p className="text-7xl font-black text-white">
-                Round{" "}
+                {t("game.roundPre")}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
                   {round}
                 </span>
+                {t("game.roundPost")}
               </p>
             </div>
           </div>
@@ -192,7 +195,7 @@ export default function GamePhase({
             <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10">
               <div className="bg-black/70 backdrop-blur-md rounded-3xl px-16 py-8 border border-yellow-500/30 animate-pulse">
                 <p className="text-7xl font-bold text-yellow-400 text-center">
-                  No winner! Dropping again...
+                  {t("game.noWinner")}
                 </p>
               </div>
             </div>
@@ -203,7 +206,7 @@ export default function GamePhase({
         <div className="w-[15%] bg-[#0B1120] border-l border-white/10 flex flex-col overflow-hidden shrink-0">
           <div className="px-6 py-6 border-b border-white/10">
             <p className="text-2xl font-bold text-red-400 uppercase tracking-wider">
-              Eliminated
+              {t("game.eliminated")}
             </p>
             <p className="text-7xl font-black text-white">
               {eliminatedPlayers.length}

@@ -2,6 +2,9 @@ export type EmojiId = string; // any emoji id from the BALL_EMOJIS list
 
 export type LevelId = "classic" | "cannon" | "tray";
 
+/** UI language. Owned by the server so the operator drives every screen. */
+export type Lang = "zh" | "en";
+
 export interface Player {
   id: string;
   name: string;
@@ -28,6 +31,8 @@ export interface GameState {
   levelId: LevelId;
   /** How many top places to celebrate as prize winners (podium size). */
   winnerCount: number;
+  /** Language for every connected view; set from the operator panel. */
+  lang: Lang;
 }
 
 export interface JoinRequest {

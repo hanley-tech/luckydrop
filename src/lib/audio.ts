@@ -11,6 +11,7 @@ import {
   sfxWinnerFanfare,
   sfxEliminate,
 } from "./sfx";
+import { tr, getLang } from "@/lib/i18n";
 
 // Use a getter so Next.js inlines the env var at each call site
 function basePath(): string {
@@ -49,7 +50,15 @@ let isSpeaking = false;
 
 function getVoice(): SpeechSynthesisVoice | null {
   const voices = speechSynthesis.getVoices();
-  // Prefer a clear English voice
+  // Follow the chosen language. Announcements are translated, so an English
+  // voice reading Chinese (or the reverse) is the one thing to avoid; falling
+  // back to any voice is better than silence.
+  if (getLang() === "zh") {
+    const zh =
+      voices.find((v) => v.lang.replace("_", "-").startsWith("zh-CN")) ||
+      voices.find((v) => v.lang.startsWith("zh"));
+    if (zh) return zh;
+  }
   const preferred = voices.find(
     (v) => v.lang.startsWith("en") && v.name.includes("Samantha")
   );
@@ -68,6 +77,7 @@ function processQueue(): void {
   isSpeaking = true;
 
   const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = getLang() === "zh" ? "zh-CN" : "en-US";
   utterance.rate = 1.15;
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
@@ -206,9 +216,9 @@ export function announcePlayerJoined(name: string, totalCount: number): void {
   if (totalCount === 1) playMusic("lobby");
   // Only announce by name for early joiners or milestone counts
   if (totalCount <= 5) {
-    speak(`${name} has joined!`);
+    speak(tr("tts.joined", { name }));
   } else if (totalCount % 10 === 0) {
-    speak(`${totalCount} players in the game!`);
+    speak(tr("tts.playersIn", { count: totalCount }));
   }
 }
 
@@ -217,7 +227,7 @@ export function announceGameStart(playerCount: number): void {
   sfxDrop();
   playMusic("game");
   updateMatchIntensity(playerCount);
-  speak(`Let's go! ${playerCount} players, Round 1. Drop!`, true);
+  speak(tr("tts.gameStart", { count: playerCount }), true);
 }
 
 export function announceRoundStart(roundNumber: number, playerCount: number): void {
@@ -225,20 +235,20 @@ export function announceRoundStart(roundNumber: number, playerCount: number): vo
   sfxDrop();
   updateMatchIntensity(playerCount);
   if (playerCount <= 5) {
-    speak(`Round ${roundNumber}. ${playerCount} players remain. Drop!`, true);
+    speak(tr("tts.roundStart", { round: roundNumber, count: playerCount }), true);
   } else {
-    speak(`Round ${roundNumber}. ${playerCount} remaining. Drop!`, true);
+    speak(tr("tts.roundStart", { round: roundNumber, count: playerCount }), true);
   }
 }
 
 export function announceRetry(): void {
   playSFX("retry", 0.5);
-  speak("Nobody made it! Dropping again!", true);
+  speak(tr("tts.retry"), true);
 }
 
 export function announceAllAdvanced(count: number): void {
   playSFX("retry", 0.5);
-  speak(`All ${count} players made it! Dropping again!`, true);
+  speak(tr("tts.allAdvanced", { count }), true);
 }
 
 export function announceRoundComplete(
@@ -254,7 +264,11 @@ export function announceRoundComplete(
     // Tighten the music as the field shrinks.
     updateMatchIntensity(advancedCount);
     speak(
-      `Round ${roundNumber} complete! ${eliminatedCount} eliminated. ${advancedCount} advance!`,
+      tr("tts.roundComplete", {
+        round: roundNumber,
+        eliminated: eliminatedCount,
+        advanced: advancedCount,
+      }),
       true
     );
   }
@@ -269,7 +283,7 @@ export function announceWinner(name: string): void {
   sfxWinnerFanfare();
   playMusic("winner");
   setTimeout(() => {
-    speak(`We have a winner! Congratulations, ${name}!`, true);
+    speak(tr("tts.winner", { name }), true);
   }, 600);
 }
 
@@ -280,20 +294,20 @@ export function announceBallInCenter(name: string): void {
 
 export function announceBulkJoin(addedCount: number, totalCount: number): void {
   playSFX("playerJoined", 0.4);
-  speak(`${addedCount} players added! ${totalCount} total.`, true);
+  speak(tr("tts.bulkJoin", { added: addedCount, total: totalCount }), true);
 }
 
 export function announceGameReset(): void {
   resetMatchIntensity();
   playMusic("lobby");
-  speak("Game reset. Scan the QR code to join!", true);
+  speak(tr("tts.gameReset"), true);
 }
 
 export function announceRestartMatch(): void {
   playSFX("roundComplete", 0.3);
   resetMatchIntensity();
   playMusic("lobby");
-  speak("Match restarted! All players back to lobby.", true);
+  speak(tr("tts.restartMatch"), true);
 }
 
 // ---------------------------------------------------------------------------

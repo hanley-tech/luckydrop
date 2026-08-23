@@ -1,4 +1,4 @@
-import { GamePhase, GameState, Player, EmojiId, LevelId } from "@/types";
+import { GamePhase, GameState, Player, EmojiId, LevelId, Lang } from "@/types";
 import { BALL_EMOJIS } from "@/lib/emojis";
 
 const RANDOM_NAMES = [
@@ -7,6 +7,17 @@ const RANDOM_NAMES = [
   "Quinn", "Rose", "Sam", "Tina", "Uma", "Vic", "Wendy", "Xander",
   "Yara", "Zack", "Aria", "Blake", "Cora", "Dean", "Ella", "Finn",
   "Gina", "Hugo", "Iris", "Joel", "Kate", "Liam", "Nora", "Owen",
+];
+
+/** Debug-user names, Chinese. Common mainland given names, deliberately not
+ *  famous people. Kept the same length as RANDOM_NAMES so the index maths and
+ *  the overflow suffix behave identically in either language. */
+const RANDOM_NAMES_ZH = [
+  "张伟", "王芳", "李强", "刘洋", "陈静", "杨帆", "赵磊", "黄敏",
+  "周宇", "吴倩", "徐鹏", "孙悦", "马涛", "朱琳", "胡兵", "郭燕",
+  "林峰", "何军", "高翔", "罗雪", "郑昊", "梁辉", "谢婷", "宋涛",
+  "唐磊", "许诺", "邓杰", "冯雷", "韩冰", "曹阳", "彭飞", "曾莉",
+  "萧然", "田源", "董楠", "潘蕾", "袁媛", "蒋涛", "蔡宁", "余波",
 ];
 
 const EMOJI_IDS: EmojiId[] = BALL_EMOJIS.map((e) => e.id);
@@ -24,6 +35,7 @@ export class GameStateManager {
       nameCheckEnabled: false,
       levelId: "classic",
       winnerCount: 1,
+      lang: "zh",
     };
   }
 
@@ -37,6 +49,13 @@ export class GameStateManager {
     // Only adjustable in lobby; clamp to a sane podium range
     if (this.state.phase !== "lobby") return;
     this.state.winnerCount = Math.max(1, Math.min(5, Math.round(count)));
+  }
+
+  /** Unlike level and podium size, language is changeable at any time —
+   *  it is presentation only and never affects play. */
+  setLang(lang: Lang): void {
+    if (lang !== "zh" && lang !== "en") return;
+    this.state.lang = lang;
   }
 
   getState(): GameState {
@@ -182,13 +201,14 @@ export class GameStateManager {
     const newPlayers: Player[] = [];
     const existingCount = this.state.players.length;
     for (let i = 0; i < count; i++) {
-      const nameIndex = (existingCount + i) % RANDOM_NAMES.length;
-      const suffix = existingCount + i >= RANDOM_NAMES.length
-        ? `_${Math.floor((existingCount + i) / RANDOM_NAMES.length)}`
+      const names = this.state.lang === "zh" ? RANDOM_NAMES_ZH : RANDOM_NAMES;
+      const nameIndex = (existingCount + i) % names.length;
+      const suffix = existingCount + i >= names.length
+        ? `_${Math.floor((existingCount + i) / names.length)}`
         : "";
       const player: Player = {
         id: `debug-${Date.now()}-${i}`,
-        name: RANDOM_NAMES[nameIndex] + suffix,
+        name: names[nameIndex] + suffix,
         emoji: EMOJI_IDS[(existingCount + i) % EMOJI_IDS.length],
         socketId: `debug-socket-${i}`,
         isDebugUser: true,

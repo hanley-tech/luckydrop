@@ -29,8 +29,10 @@ import {
   isTTSEnabled,
 } from "@/lib/audio";
 import { preloadEmojiImages } from "@/lib/emojiImages";
+import { useLang, useServerLang } from "@/lib/i18n";
 
 function AudioToggle() {
+  const { t } = useLang();
   const [muted, setMuted] = useState(false);
   return (
     <button
@@ -43,7 +45,7 @@ function AudioToggle() {
         if (!next) unlockAudio();
       }}
       className="fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl hover:bg-black/70 transition-colors"
-      title={muted ? "Unmute audio" : "Mute audio"}
+      title={muted ? t("audio.unmute") : t("audio.mute")}
     >
       {muted ? "\u{1F507}" : "\u{1F50A}"}
     </button>
@@ -51,6 +53,8 @@ function AudioToggle() {
 }
 
 export default function DisplayPage() {
+  const { t } = useLang();
+  useServerLang();
   const [phase, setPhase] = useState<GamePhase>("lobby");
   const [players, setPlayers] = useState<Player[]>([]);
   const [round, setRound] = useState(0);
@@ -313,8 +317,8 @@ export default function DisplayPage() {
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-black/80 backdrop-blur-sm text-white cursor-pointer"
         >
           <span className="text-8xl animate-pulse">{"\u{1F50A}"}</span>
-          <span className="text-4xl font-black tracking-wide">Tap to enable sound</span>
-          <span className="text-xl text-slate-400">Click anywhere on this screen to start the music & effects</span>
+          <span className="text-4xl font-black tracking-wide">{t("audio.tapToEnable")}</span>
+          <span className="text-xl text-slate-400">{t("audio.clickAnywhere")}</span>
         </button>
       )}
     </>

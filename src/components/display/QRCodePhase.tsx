@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/lib/i18n";
 import { QRCodeSVG } from "qrcode.react";
 import { Player } from "@/types";
 import PlayerList from "./PlayerList";
@@ -18,12 +19,14 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
     setJoinUrl(`${window.location.origin}${basePath}/join`);
   }, []);
 
+  const { t } = useLang();
+
   return (
     <div className="w-full h-full bg-[#0F172A] flex p-10 gap-8">
       {/* Left column: live physics demo (double-width) */}
       <div className="flex-1 flex flex-col min-h-0">
         <h2 className="text-5xl font-bold text-slate-300 mb-4 text-center">
-          Live Demo
+          {t("lobby.liveDemo")}
         </h2>
         <div className="flex-1 min-h-0 flex items-center justify-center">
           <LobbyDemoCanvas players={players} />
@@ -33,9 +36,9 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
       {/* Center column: title + QR + count — only as wide as it needs to be */}
       <div className="shrink-0 flex flex-col items-center justify-center gap-6 px-20">
         <h1 className="text-[5rem] font-black text-white tracking-tight leading-none text-center">
-          Lucky
+          {t("app.nameLucky")}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-            Drop
+            {t("app.nameDrop")}
           </span>
         </h1>
 
@@ -52,17 +55,17 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
         </div>
 
         <p className="text-5xl font-bold text-white animate-pulse">
-          Scan to Join!
+          {t("lobby.scanToJoin")}
         </p>
 
         <p className="text-xl text-slate-400 font-mono">
-          {joinUrl || "Loading..."}
+          {joinUrl || t("lobby.loading")}
         </p>
 
         <div className="flex items-center gap-4 bg-white/10 rounded-full px-8 py-4 backdrop-blur-sm">
           <div className="w-4 h-4 rounded-full bg-green-400 animate-pulse" />
           <span className="text-3xl font-bold text-white whitespace-nowrap">
-            {players.length} player{players.length !== 1 ? "s" : ""} joined
+            {t("lobby.playersJoined", { count: players.length })}
           </span>
         </div>
       </div>
@@ -70,12 +73,12 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
       {/* Right column: 3-column player list (auto-scrolls when overflowing) */}
       <div className="flex-1 flex flex-col min-h-0 px-12">
         <h2 className="text-5xl font-bold text-slate-300 mb-4 text-center">
-          Players
+          {t("lobby.players")}
         </h2>
         <div className="flex-1 min-h-0 flex items-center justify-center">
           {players.length === 0 ? (
             <p className="text-3xl text-slate-500 text-center">
-              Waiting for the first player...
+              {t("lobby.waitingFirst")}
             </p>
           ) : (
             <div className="h-full w-full flex items-center">

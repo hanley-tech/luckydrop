@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/lib/i18n";
 import { getSocket } from "@/lib/socket";
 
 /**
@@ -13,6 +14,7 @@ export default function ConnectionIndicator({
 }: {
   corner?: "bottom-left" | "top-left" | "top-right";
 }) {
+  const { t } = useLang();
   const [connected, setConnected] = useState(true);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function ConnectionIndicator({
     >
       <span className="w-3 h-3 rounded-full bg-white animate-ping" />
       <span className="text-white font-bold text-lg tracking-wide">
-        Reconnecting…
+        {t("conn.reconnecting")}
       </span>
     </div>
   );

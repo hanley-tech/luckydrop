@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useLang, useServerLang } from "@/lib/i18n";
 import JoinForm from "@/components/mobile/JoinForm";
 import WaitingScreen from "@/components/mobile/WaitingScreen";
 import ConnectionIndicator from "@/components/ConnectionIndicator";
@@ -16,6 +17,8 @@ function clearLegacyCookie() {
 }
 
 export default function JoinPage() {
+  const { t } = useLang();
+  useServerLang();
   clearLegacyCookie();
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -119,7 +122,7 @@ export default function JoinPage() {
     <main className="min-h-dvh bg-[#0F172A] flex flex-col items-center justify-center px-6 py-10">
       <ConnectionIndicator corner="top-right" />
       <h1 className="text-3xl font-extrabold text-white mb-8 tracking-tight">
-        Lucky Drop
+        {t("app.name")}
       </h1>
 
       {player ? (

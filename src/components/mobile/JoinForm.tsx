@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useLang } from "@/lib/i18n";
 import EmojiPicker from "./ColorPicker";
 import { getSocket } from "@/lib/socket";
 import { C2S, S2C } from "@/lib/socketEvents";
@@ -12,6 +13,7 @@ interface JoinFormProps {
 }
 
 export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) {
+  const { t } = useLang();
   const [name, setName] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState<EmojiId | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
 
     const handleRejected = (data: { reason: string }) => {
       setIsSubmitting(false);
-      setError(data.reason || "Join request rejected.");
+      setError(data.reason || t("join.errRejected"));
     };
 
     socket.on(S2C.JOIN_ACCEPTED, handleAccepted);
@@ -50,11 +52,11 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError("Please enter your name.");
+      setError(t("join.errNoName"));
       return;
     }
     if (!selectedEmoji) {
-      setError("Please pick an emoji.");
+      setError(t("join.errNoEmoji"));
       return;
     }
 
@@ -72,12 +74,12 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
         const data = await res.json();
         if (!res.ok || !data.allowed) {
           setIsSubmitting(false);
-          setError(data.reason || "Name not allowed.");
+          setError(data.reason || t("join.errNotAllowed"));
           return;
         }
       } catch {
         setIsSubmitting(false);
-        setError("Could not verify name. Please try again.");
+        setError(t("join.errVerify"));
         return;
       }
     }
@@ -91,7 +93,7 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full max-w-sm mx-auto">
       <div>
         <label htmlFor="player-name" className="block text-sm font-medium text-slate-300 mb-2">
-          Your Name
+          {t("join.yourName")}
         </label>
         <input
           ref={inputRef}
@@ -103,14 +105,14 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
             setError(null);
           }}
           maxLength={8}
-          placeholder="Your Name"
+          placeholder={t("join.namePlaceholder")}
           autoComplete="off"
           className="w-full px-4 py-3 text-lg rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <p className="text-sm font-medium text-slate-300 mb-3">Pick Your Emoji</p>
+        <p className="text-sm font-medium text-slate-300 mb-3">{t("join.pickEmoji")}</p>
         <EmojiPicker selected={selectedEmoji} onSelect={(e) => { setSelectedEmoji(e); setError(null); }} />
       </div>
 
@@ -131,10 +133,10 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Joining...
+            {t("join.joining")}
           </>
         ) : (
-          "Join!"
+          t("join.submit")
         )}
       </button>
     </form>

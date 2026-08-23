@@ -1,5 +1,7 @@
 "use client";
 
+import { useLang } from "@/lib/i18n";
+
 interface DebugToolsProps {
   nameCheckEnabled: boolean;
   onAddDebugUsers: (count: number) => void;
@@ -11,9 +13,10 @@ export default function DebugTools({
   onAddDebugUsers,
   onToggleNameCheck,
 }: DebugToolsProps) {
+  const { t } = useLang();
   return (
     <div className="bg-slate-800 rounded-xl p-6 space-y-6 border border-yellow-600/30">
-      <h2 className="text-2xl font-bold text-yellow-400">Debug Tools</h2>
+      <h2 className="text-2xl font-bold text-yellow-400">{t("op.debugTools")}</h2>
 
       <div className="space-y-4">
         {/* Add test users buttons */}
@@ -22,19 +25,19 @@ export default function DebugTools({
             onClick={() => onAddDebugUsers(5)}
             className="py-3 px-6 rounded-xl text-lg font-semibold bg-yellow-700 hover:bg-yellow-600 text-white transition-all active:scale-95"
           >
-            Add 5 Test Users
+            {t("op.add5")}
           </button>
           <button
             onClick={() => onAddDebugUsers(40)}
             className="py-3 px-6 rounded-xl text-lg font-semibold bg-yellow-600 hover:bg-yellow-500 text-white transition-all active:scale-95"
           >
-            Add 40 Test Users
+            {t("op.add40")}
           </button>
         </div>
 
         {/* Name check toggle */}
         <div className="flex items-center justify-between bg-slate-900 rounded-lg p-4">
-          <span className="text-lg text-white font-medium">Name Check</span>
+          <span className="text-lg text-white font-medium">{t("op.nameCheck")}</span>
           <button
             onClick={() => onToggleNameCheck(!nameCheckEnabled)}
             className={`relative w-16 h-8 rounded-full transition-colors ${
