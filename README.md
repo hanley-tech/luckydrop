@@ -174,9 +174,15 @@ Name moderation uses OpenAI to filter inappropriate player names. If no API key 
 
 ### Sound Files
 
-The game's **sound effects are synthesized in the browser** (Web Audio) and need no files. What *does* use files is **background music** and, optionally, richer file-based SFX — and those `.mp3`s are **not included** in this repo (licensing). Without them you still get the synth SFX + TTS announcements; you just won't have background music.
+The game's **sound effects are synthesized in the browser** (Web Audio) and need
+no files. On top of that, LuckyDrop ships a **CC0 default set** in
+`public/sounds/default/` — background music plus richer file-based SFX — so
+audio works out of the box with nothing to install. Every file is public domain
+(Kenney + OpenGameArt); see [`public/sounds/default/CREDITS.md`](public/sounds/default/CREDITS.md).
 
-To add music/SFX files, place `.mp3` files in `public/sounds/` and edit `public/sounds/sounds.json` to map each event to your file:
+**To use your own music/SFX instead** (e.g. tracks from a subscription library),
+drop `.mp3`s directly into `public/sounds/` and point `public/sounds/sounds.json`
+at the bare filenames:
 
 ```json
 {
@@ -198,7 +204,12 @@ To add music/SFX files, place `.mp3` files in `public/sounds/` and edit `public/
 }
 ```
 
-Set any entry to `null` or remove it to skip that sound. Any free-to-use game sound effects and background music will work. Sites like [freesound.org](https://freesound.org) and [pixabay.com/music](https://pixabay.com/music/) have good options.
+`public/sounds/` itself is gitignored (only `default/` is committed), so licensed
+audio you add there can never be committed by accident. Set any entry to `null`
+or remove it to skip that sound.
+
+> Next.js indexes `public/` at startup — **restart the server** after adding files
+> or they will 404.
 
 ### Running in Production
 

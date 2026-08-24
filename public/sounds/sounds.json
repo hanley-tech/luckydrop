@@ -1,17 +1,18 @@
 {
+  "$comment": "Paths are relative to public/sounds/. The bundled CC0 set lives in default/ — see default/CREDITS.md. To use your own (e.g. licensed library) tracks, drop .mp3s straight into public/sounds/ and change these values to bare filenames; that top level is gitignored so licensed audio can never be committed.",
   "sfx": {
-    "playerJoined": "player-joined.mp3",
-    "gameStart": "game-start.mp3",
-    "ballCenter": "ball-center.mp3",
-    "roundComplete": "round-complete.mp3",
-    "retry": "retry.mp3",
-    "winnerCheers": "winner-cheers.mp3",
-    "powerUp": "power-up.mp3"
+    "playerJoined": "default/player-joined.mp3",
+    "gameStart": "default/game-start.mp3",
+    "ballCenter": "default/ball-center.mp3",
+    "roundComplete": "default/round-complete.mp3",
+    "retry": "default/retry.mp3",
+    "winnerCheers": "default/winner-cheers.mp3",
+    "powerUp": "default/power-up.mp3"
   },
   "music": {
-    "lobby": "lobby.mp3",
-    "game": "game.mp3",
-    "transition": "transition.mp3",
-    "winner": "winner.mp3"
+    "lobby": "default/lobby.mp3",
+    "game": "default/game.mp3",
+    "transition": "default/transition.mp3",
+    "winner": "default/winner.mp3"
   }
 }

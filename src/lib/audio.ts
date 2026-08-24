@@ -121,24 +121,25 @@ interface SoundConfig {
   music: Record<string, string>;
 }
 
-// Default filenames — used synchronously from page load so music can start on
-// the very first click without waiting for sounds.json to fetch. A custom
-// sounds.json (if present) overrides these once it loads.
+// Default filenames — the bundled CC0 set in public/sounds/default/, which is
+// the only part of public/sounds/ that's committed. Used synchronously from
+// page load so music can start on the very first click without waiting for
+// sounds.json to fetch. A custom sounds.json overrides these once it loads.
 const DEFAULT_SOUND_CONFIG: SoundConfig = {
   sfx: {
-    playerJoined: "player-joined.mp3",
-    gameStart: "game-start.mp3",
-    ballCenter: "ball-center.mp3",
-    roundComplete: "round-complete.mp3",
-    retry: "retry.mp3",
-    winnerCheers: "winner-cheers.mp3",
-    powerUp: "power-up.mp3",
+    playerJoined: "default/player-joined.mp3",
+    gameStart: "default/game-start.mp3",
+    ballCenter: "default/ball-center.mp3",
+    roundComplete: "default/round-complete.mp3",
+    retry: "default/retry.mp3",
+    winnerCheers: "default/winner-cheers.mp3",
+    powerUp: "default/power-up.mp3",
   },
   music: {
-    lobby: "lobby.mp3",
-    game: "game.mp3",
-    transition: "transition.mp3",
-    winner: "winner.mp3",
+    lobby: "default/lobby.mp3",
+    game: "default/game.mp3",
+    transition: "default/transition.mp3",
+    winner: "default/winner.mp3",
   },
 };
 
