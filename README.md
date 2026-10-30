@@ -159,13 +159,13 @@ PORT=3418 npm run dev            # in another terminal
 node scripts/guide-shots.mjs http://localhost:3418   # add your NEXT_PUBLIC_BASE_PATH if set
 ```
 
+It uses your installed Google Chrome (muted) and writes `public/guide/<lang>/*.jpg`.
+
 To record demo footage for a video, `scripts/demo-capture.mjs` captures the display at ~60 fps with the game's music and effects as separate stems (also against a scratch server):
 
 ```bash
 node scripts/demo-capture.mjs http://localhost:3418 <out dir> [lobby sudden-death operator join]
 ```
-
-It uses your installed Google Chrome (muted) and writes `public/guide/<lang>/*.jpg`.
 
 ### For Players
 
