@@ -14,6 +14,7 @@ interface GamePhaseProps {
   round: number;
   phase: "dropping" | "recycling";
   levelId: LevelId;
+  suddenDeath: boolean;
   onRoundResult: (advancedIds: string[], eliminatedIds: string[]) => void;
 }
 
@@ -100,6 +101,7 @@ export default function GamePhase({
   round,
   phase,
   levelId,
+  suddenDeath,
   onRoundResult,
 }: GamePhaseProps) {
   const { t } = useLang();
@@ -175,25 +177,52 @@ export default function GamePhase({
             roundNumber={round}
             isRecycling={phase === "recycling"}
             levelId={levelId}
+            suddenDeath={suddenDeath}
             onRoundResult={handleRoundResult}
             onBallLanded={handleBallLanded}
           />
 
-          {/* Round indicator overlay */}
+          {/* Round indicator overlay — becomes the sudden death banner */}
           <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
-            <div className="bg-black/60 backdrop-blur-md rounded-3xl px-14 py-5 border border-white/10">
-              <p className="text-7xl font-black text-white" style={{ fontFamily: theme.displayFont }}>
-                {t("game.roundPre")}
-                <span className="text-transparent bg-clip-text" style={{ backgroundImage: theme.accentGradient }}>
-                  {round}
-                </span>
-                {t("game.roundPost")}
-              </p>
-            </div>
+            {suddenDeath ? (
+              <div className="bg-black/70 backdrop-blur-md rounded-3xl px-14 py-5 border-2 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.45)] text-center">
+                <p className="text-7xl font-black text-red-500 whitespace-nowrap" style={{ fontFamily: theme.displayFont }}>
+                  {t("game.suddenDeath")}{" "}
+                  <span className="text-white">{t("game.firstOneWins")}</span>
+                </p>
+              </div>
+            ) : (
+              <div className="bg-black/60 backdrop-blur-md rounded-3xl px-14 py-5 border border-white/10">
+                <p className="text-7xl font-black text-white" style={{ fontFamily: theme.displayFont }}>
+                  {t("game.roundPre")}
+                  <span className="text-transparent bg-clip-text" style={{ backgroundImage: theme.accentGradient }}>
+                    {round}
+                  </span>
+                  {t("game.roundPost")}
+                </p>
+              </div>
+            )}
           </div>
 
+          {/* Sudden death intro — replaces the "no winner" retry message */}
+          {phase === "recycling" && suddenDeath && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
+              <div className="bg-black/80 backdrop-blur-md rounded-[3rem] px-24 py-16 border-4 border-red-500/80 shadow-[0_0_120px_rgba(239,68,68,0.6)] text-center animate-pulse">
+                <p className="text-[12rem] leading-none font-black text-red-500" style={{ fontFamily: theme.displayFont }}>
+                  {t("game.suddenDeath")}
+                </p>
+                <p className="mt-8 text-9xl font-black text-white" style={{ fontFamily: theme.displayFont }}>
+                  {t("game.firstOneWins")}
+                </p>
+                <p className="mt-8 text-5xl font-bold text-red-200/80">
+                  {t("game.suddenDeathRule")}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Recycling message overlay */}
-          {phase === "recycling" && (
+          {phase === "recycling" && !suddenDeath && (
             <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10">
               <div className="bg-black/70 backdrop-blur-md rounded-3xl px-16 py-8 border border-yellow-500/30 animate-pulse">
                 <p className="text-7xl font-bold text-yellow-400 text-center">

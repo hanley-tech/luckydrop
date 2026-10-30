@@ -14,6 +14,7 @@ interface ControlPanelProps {
   onSetWinnerCount: (count: number) => void;
   onSetLang: (lang: Lang) => void;
   onSetTheme: (theme: ThemeId) => void;
+  onSetSuddenDeath: (enabled: boolean) => void;
 }
 
 const WINNER_COUNT_OPTIONS = [1, 2, 3, 4, 5];
@@ -31,9 +32,10 @@ export default function ControlPanel({
   onSetWinnerCount,
   onSetLang,
   onSetTheme,
+  onSetSuddenDeath,
 }: ControlPanelProps) {
   const { t } = useLang();
-  const { phase, players, activePlayers, round, levelId, winnerCount, lang, theme } = gameState;
+  const { phase, players, activePlayers, round, levelId, winnerCount, lang, theme, suddenDeathEnabled, suddenDeath } = gameState;
   const canStart = phase === "lobby" && players.length > 0;
   const canRestart = phase !== "lobby";
   const canChangeLevel = phase === "lobby";
@@ -178,6 +180,28 @@ export default function ControlPanel({
             ? t("op.winnerHint.one")
             : t("op.winnerHint.many", { n: winnerCount })}
         </p>
+      </div>
+
+      {/* Sudden death — stays enabled mid-match so a stuck final round can be
+          rescued; turning it off doesn't end a sudden death already running */}
+      <div className="bg-slate-900 rounded-lg p-4 space-y-2">
+        <label className="flex items-center gap-3 cursor-pointer min-h-11">
+          <input
+            type="checkbox"
+            checked={suddenDeathEnabled}
+            onChange={(e) => onSetSuddenDeath(e.target.checked)}
+            className="w-6 h-6 accent-red-500 cursor-pointer shrink-0"
+          />
+          <span className="text-sm text-slate-400 uppercase tracking-wide">
+            {t("op.suddenDeath")}
+          </span>
+          {suddenDeath && (phase === "dropping" || phase === "recycling") && (
+            <span className="ml-auto text-xs font-bold text-red-400 animate-pulse">
+              {t("op.suddenDeathActive")}
+            </span>
+          )}
+        </label>
+        <p className="text-xs text-slate-500">{t("op.suddenDeathHint")}</p>
       </div>
 
       {/* Action buttons */}

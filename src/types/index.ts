@@ -24,6 +24,11 @@ export interface Player {
 
 export type GamePhase = "lobby" | "dropping" | "recycling" | "winner";
 
+/** First round played on the narrowest win zone (a single slot). Rounds from
+ *  here on are "the last round" — the board can't get any harder — so a
+ *  nobody-made-it result here is what can trigger sudden death. */
+export const FINAL_ROUND = 3;
+
 export interface GameState {
   phase: GamePhase;
   players: Player[];
@@ -38,6 +43,12 @@ export interface GameState {
   lang: Lang;
   /** Visual theme for every connected view; set from the operator panel. */
   theme: ThemeId;
+  /** Operator option: a no-winner final round goes to sudden death instead
+   *  of an endless retry loop. */
+  suddenDeathEnabled: boolean;
+  /** True once this match has entered sudden death: misses redrop from the
+   *  top straight away and the first ball into the win zone wins. */
+  suddenDeath: boolean;
 }
 
 export interface JoinRequest {

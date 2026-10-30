@@ -113,6 +113,7 @@ const GUIDE: Record<"zh" | "en", Guide> = {
             "球一到底部就定输赢：落进中间的 WIN 区就晋级，否则爆炸出局。",
             "下一轮会自动开始。人越少，音乐越快，WIN 区越窄，关键时刻会慢动作。",
             "如果一轮里没有任何球进 WIN 区，会自动重来，没有人出局。",
+            "骤死赛（可选）：从第 3 轮起 WIN 区只剩一格，这时若无人进洞，就不再无限重来，而是进入「骤死赛！先进洞者获胜！」。没进洞的球立刻从顶部重新掉落，第一个进 WIN 区的人获胜。其余骤死赛玩家按球当时的高度排名（越低越靠前），之前轮次淘汰的玩家排名不变。",
             "决出胜者后，大屏幕放礼花，并显示领奖台（前 N 名）和后面 5 名。",
           ],
         ],
@@ -124,6 +125,7 @@ const GUIDE: Record<"zh" | "en", Guide> = {
           [
             "关卡（仅大厅可改）：经典、炮火交叉、午餐托盘——障碍不同，混乱程度不同。",
             "获奖人数（仅大厅可改）：1–5 人，决定最后领奖台的大小。",
+            "骤死赛（随时可改）：勾选后，最后一轮无人进洞时进入骤死赛。比赛卡在不断重来时也可以中途勾选；取消勾选不会中止已经开始的骤死赛。",
             "语言（随时可改）：同时切换大屏幕和所有玩家手机的语言，包括语音播报。",
             "主题（随时可改）：同时切换大屏幕和所有玩家手机的外观和声音。比赛中途也可以切。",
             "开始游戏：大厅里有玩家时才能点。",
@@ -239,6 +241,7 @@ const GUIDE: Record<"zh" | "en", Guide> = {
             "The moment a ball reaches the bottom it’s decided: in the centre WIN zone it advances, anywhere else it explodes and is out.",
             "The next round starts automatically. As the field shrinks the music speeds up, the WIN zone narrows and slow-motion kicks in for big moments.",
             "If no ball lands in the WIN zone, the round replays automatically and nobody is eliminated.",
+            "Sudden death (optional): from round 3 the WIN zone is a single slot. If a round there ends with nobody in, instead of replaying forever the big screen shows “SUDDEN DEATH! FIRST ONE WINS!”. A ball that misses drops straight back in from the top, and the first ball into WIN wins. Everyone else in sudden death is ranked by how far down their ball was at that moment (lowest = 2nd); players knocked out in earlier rounds keep their normal ranking.",
             "When it’s decided, the big screen throws confetti and shows the podium (your top N) plus the next 5.",
           ],
         ],
@@ -250,6 +253,7 @@ const GUIDE: Record<"zh" | "en", Guide> = {
           [
             "Level (lobby only): Classic, Cannon Crossfire or Lunch Tray — different obstacles, different chaos.",
             "Prize winners (lobby only): 1–5, the size of the podium at the finish.",
+            "Sudden death (any time): when ticked, a no-winner final round goes to sudden death. You can tick it mid-match to rescue a final that keeps replaying; unticking doesn’t stop a sudden death already running.",
             "Language (any time): switches the big screen, every phone and the spoken announcements.",
             "Theme (any time): restyles the big screen and every phone, sounds included. Works mid-match.",
             "Start Game: only available in the lobby with at least one player.",

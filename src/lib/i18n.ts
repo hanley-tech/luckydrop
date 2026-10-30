@@ -48,6 +48,9 @@ const zh: Dict = {
   "game.remaining": "剩余",
   "game.eliminated": "已淘汰",
   "game.noWinner": "无人进洞，再来一次…",
+  "game.suddenDeath": "骤死赛！",
+  "game.firstOneWins": "先进洞者获胜！",
+  "game.suddenDeathRule": "没进洞？立刻从顶部重新掉落",
   "game.roundPre": "第 ",
   "game.roundPost": " 轮",
 
@@ -103,6 +106,9 @@ const zh: Dict = {
   "op.guide": "📖 主持人指南",
   "op.themeHint": "同时改变大屏幕和所有玩家手机上的外观，比赛中也可切换。",
   "op.winnerHint.one": "决出 1 位冠军，另展示 5 位亚军。",
+  "op.suddenDeath": "骤死赛",
+  "op.suddenDeathHint": "最后一轮（单个获胜格）若无人进洞，不再无限重来：未进洞的球立刻从顶部重新掉落，第一个进洞的人获胜。其余玩家按球的高度排名（越低越靠前）。比赛中也可开启。",
+  "op.suddenDeathActive": "骤死赛进行中",
   "op.winnerHint.many": "前 {n} 名登上领奖台，另展示 5 位亚军。",
 
   // phases (values of gameState.phase)
@@ -130,6 +136,7 @@ const zh: Dict = {
   "tts.gameStart": "开始！{count} 位玩家，第 1 轮。掉落！",
   "tts.roundStart": "第 {round} 轮，还剩 {count} 位玩家。掉落！",
   "tts.retry": "无人进洞！再来一次！",
+  "tts.suddenDeath": "骤死赛！先进洞者获胜！",
   "tts.allAdvanced": "全部 {count} 位玩家都进洞了！再来一次！",
   "tts.roundComplete": "第 {round} 轮结束！{eliminated} 位淘汰，{advanced} 位晋级！",
   "tts.winner": "我们有获胜者了！恭喜 {name}！",
@@ -162,6 +169,9 @@ const en: Dict = {
   "game.remaining": "Remaining",
   "game.eliminated": "Eliminated",
   "game.noWinner": "No winner! Dropping again...",
+  "game.suddenDeath": "SUDDEN DEATH!",
+  "game.firstOneWins": "FIRST ONE WINS!",
+  "game.suddenDeathRule": "Miss and you drop straight back in from the top",
   "game.roundPre": "Round ",
   "game.roundPost": "",
 
@@ -212,6 +222,9 @@ const en: Dict = {
   "op.guide": "📖 Operator Guide",
   "op.themeHint": "Restyles the big screen and every player\u2019s phone. Works mid-match.",
   "op.winnerHint.one": "Single champion + 5 runners-up shown at the finish.",
+  "op.suddenDeath": "Sudden death",
+  "op.suddenDeathHint": "If the final round (single win slot) ends with nobody in, skip the endless retries: misses drop straight back in from the top and the first ball in wins. Everyone else is ranked by how far down their ball got. Can be switched on mid-match.",
+  "op.suddenDeathActive": "Sudden death in progress",
   "op.winnerHint.many": "Top {n} on the podium + 5 runners-up shown at the finish.",
 
   "phase.lobby": "Lobby",
@@ -236,6 +249,7 @@ const en: Dict = {
   "tts.gameStart": "Let's go! {count} players, Round 1. Drop!",
   "tts.roundStart": "Round {round}. {count} players remain. Drop!",
   "tts.retry": "Nobody made it! Dropping again!",
+  "tts.suddenDeath": "Sudden death! First one in wins!",
   "tts.allAdvanced": "All {count} players made it! Dropping again!",
   "tts.roundComplete": "Round {round} complete! {eliminated} eliminated. {advanced} advance!",
   "tts.winner": "We have a winner! Congratulations, {name}!",

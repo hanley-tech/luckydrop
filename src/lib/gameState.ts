@@ -1,4 +1,4 @@
-import { GamePhase, GameState, Player, EmojiId, LevelId, Lang, ThemeId } from "@/types";
+import { GamePhase, GameState, Player, EmojiId, LevelId, Lang, ThemeId, FINAL_ROUND } from "@/types";
 import { BALL_EMOJIS } from "@/lib/emojis";
 
 const RANDOM_NAMES = [
@@ -37,6 +37,8 @@ export class GameStateManager {
       winnerCount: 1,
       lang: "zh",
       theme: "neon",
+      suddenDeathEnabled: false,
+      suddenDeath: false,
     };
   }
 
@@ -63,6 +65,13 @@ export class GameStateManager {
   setTheme(theme: ThemeId): void {
     if (theme !== "neon" && theme !== "halloween") return;
     this.state.theme = theme;
+  }
+
+  /** Changeable at any time, so the operator can rescue a match that's
+   *  already stuck retrying. Turning it off doesn't end a sudden death that
+   *  has already started. */
+  setSuddenDeathEnabled(enabled: boolean): void {
+    this.state.suddenDeathEnabled = enabled;
   }
 
   getState(): GameState {
@@ -113,6 +122,7 @@ export class GameStateManager {
     if (this.state.players.length === 0) return null;
     this.state.phase = "dropping";
     this.state.round = 1;
+    this.state.suddenDeath = false;
     this.state.activePlayers = this.state.players.map((p) => ({
       ...p,
       eliminated: false,
@@ -131,6 +141,8 @@ export class GameStateManager {
     advanced: Player[];
     eliminated: Player[];
     round: number;
+    /** True on the retry that starts sudden death (and every result after). */
+    suddenDeath: boolean;
   } {
     const advanced = this.state.activePlayers.filter((p) =>
       advancedIds.includes(p.id)
@@ -146,13 +158,18 @@ export class GameStateManager {
     const currentRound = this.state.round;
 
     if (advanced.length === 0) {
-      // Nobody hit center - retry with same players, nobody eliminated
+      // Nobody hit center - retry with same players, nobody eliminated.
+      // On the final board, sudden death (if enabled) replaces the retry loop.
+      if (this.state.suddenDeathEnabled && currentRound >= FINAL_ROUND) {
+        this.state.suddenDeath = true;
+      }
       this.state.phase = "recycling";
       return {
         type: "retry",
         advanced: [],
         eliminated: [],
         round: currentRound,
+        suddenDeath: this.state.suddenDeath,
       };
     }
 
@@ -181,6 +198,7 @@ export class GameStateManager {
         advanced,
         eliminated,
         round: currentRound,
+        suddenDeath: this.state.suddenDeath,
       };
     } else {
       // Multiple advanced - next round with only advanced players
@@ -192,15 +210,17 @@ export class GameStateManager {
         advanced,
         eliminated,
         round: currentRound,
+        suddenDeath: this.state.suddenDeath,
       };
     }
   }
 
-  startNextRound(): { players: Player[]; roundNumber: number } {
+  startNextRound(): { players: Player[]; roundNumber: number; suddenDeath: boolean } {
     this.state.phase = "dropping";
     return {
       players: this.state.activePlayers,
       roundNumber: this.state.round,
+      suddenDeath: this.state.suddenDeath,
     };
   }
 
@@ -234,6 +254,7 @@ export class GameStateManager {
     this.state.phase = "lobby";
     this.state.round = 0;
     this.state.winner = null;
+    this.state.suddenDeath = false;
     this.state.activePlayers = [];
     for (const p of this.state.players) {
       p.eliminated = false;
@@ -248,6 +269,7 @@ export class GameStateManager {
     this.state.activePlayers = [];
     this.state.round = 0;
     this.state.winner = null;
+    this.state.suddenDeath = false;
     // levelId is preserved across resets so the operator's choice sticks
   }
 }

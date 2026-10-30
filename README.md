@@ -19,6 +19,7 @@ No app install. No sign-up. Just scan, drop, and win.
 - **Real physics** — Matter.js powers the Plinko board. Every drop is different. Every round is suspenseful.
 - **Themes** — Switch the whole room between *Neon* and *Halloween* (graveyard board, jack-o'-lantern pegs, flying bats, ghosts, lightning, its own music and sounds) from the operator panel, even mid-match.
 - **Dynamic audio** — Synthesized techno sound effects (peg pings, explosions, win chimes — no files required), plus TTS announcements and background music that speeds up with a tension pulse as the field narrows to the final few.
+- **Sudden death** — Optional: if the final round ends with nobody in, skip the endless retries — misses drop straight back in from the top and the first ball into WIN takes it.
 - **Pick your prizes** — Award 1 to 5 winners; the finish shows a ranked podium (gold/silver/bronze) plus runners-up.
 - **Multiple boards** — *Classic*, *Cannon Crossfire*, and *Lunch Tray* levels change the obstacles and the chaos.
 - **Works on any screen** — Designed for projectors and TVs at 16:9 (4K-ready). Emojis render as bundled images, so they show even on machines whose OS emoji font doesn't draw to canvas.
@@ -87,6 +88,8 @@ stateDiagram-v2
 
     Elimination --> Dropping: Multiple players remain
     Elimination --> Dropping: Nobody hit center (retry)
+    Elimination --> SuddenDeath: Nobody hit center, round 3+, sudden death on
+    SuddenDeath --> Winner: First ball into WIN
     Elimination --> Winner: One player left
 
     Winner --> Lobby: Restart Match
@@ -114,7 +117,8 @@ stateDiagram-v2
 1. **Lobby phase** — Attendees scan the QR code and enter their name + emoji. The display shows players as they join. Before starting, optionally pick a **level** and the number of **prize winners** (1–5). Wait until everyone is in.
 2. **Start the game** — Tap "Start Game" on the operator panel. All player balls drop through the Plinko board simultaneously.
 3. **Elimination** — The moment a ball hits the bottom it's decided: land in the center "WIN" zone to advance (star burst), otherwise it explodes and is out. The left sidebar shows remaining players, the right sidebar shows eliminated ones. As the field shrinks the music speeds up and a tension pulse kicks in.
-4. **Subsequent rounds** — The next round starts automatically after a short pause. The win zone narrows and slow-motion kicks in for the decisive drops.
+4. **Subsequent rounds** — The next round starts automatically after a short pause. The win zone narrows (5 slots → 3 → a single slot from round 3) and slow-motion kicks in for the decisive drops. If nobody lands in WIN, the round replays with nobody eliminated.
+   - **Sudden death** (if enabled) — When a round on the single-slot board (round 3+) ends with nobody in, the display announces **SUDDEN DEATH! FIRST ONE WINS!** instead of replaying. Balls drop continuously: a miss pops and drops straight back in from the top, and the first ball into WIN is the champion. Everyone else still in sudden death is ranked by how far down the board their ball was at that moment (lowest = 2nd); players knocked out in earlier rounds keep their normal ranking.
 5. **Winner(s)** — When the field resolves, the display celebrates with confetti and shows the ranked **podium** — the champion (or your top N prize winners) plus runners-up.
 6. **Play again** — Use "Restart Match" to go back to lobby with the same players (resets the music too), or "Reset All" to clear everything.
 
@@ -124,6 +128,7 @@ stateDiagram-v2
 |--------|-------------|
 | **Level** (lobby only) | Choose the board: Classic, Cannon Crossfire, or Lunch Tray |
 | **Prize winners** (lobby only) | Set how many top places to celebrate (1–5) — the podium size at the finish |
+| **Sudden death** (any time) | Checkbox. A no-winner round on the single-slot board (round 3+) goes to sudden death instead of replaying forever. Can be ticked mid-match to rescue a stuck final; unticking doesn't stop a sudden death already running |
 | **Language** (any time) | 中文 / English for the big screen, every phone and the spoken announcements |
 | **Theme** (any time) | Neon / Halloween for the big screen and every phone, sounds included |
 | **📖 Operator Guide** | Opens the illustrated how-to at `/operator/guide` in a new tab |
@@ -152,6 +157,12 @@ The operator panel links to an illustrated guide at `/operator/guide` (Chinese/E
 ```bash
 PORT=3418 npm run dev            # in another terminal
 node scripts/guide-shots.mjs http://localhost:3418   # add your NEXT_PUBLIC_BASE_PATH if set
+```
+
+To record demo footage for a video, `scripts/demo-capture.mjs` captures the display at ~60 fps with the game's music and effects as separate stems (also against a scratch server):
+
+```bash
+node scripts/demo-capture.mjs http://localhost:3418 <out dir> [lobby sudden-death operator join]
 ```
 
 It uses your installed Google Chrome (muted) and writes `public/guide/<lang>/*.jpg`.

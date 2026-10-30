@@ -170,11 +170,7 @@ function getStaticBoard(
     ctx.lineTo(highlightRight, boardHeight);
     ctx.stroke();
 
-    ctx.fillStyle = theme.winBorder;
-    ctx.font = winFont;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillText("WIN", highlightLeft + highlightWidth / 2, slotTop + 8);
+    // The WIN label is drawn live in drawWinPulse, on top of the pulse
     ctx.shadowBlur = 0;
   }
 
@@ -481,6 +477,34 @@ function drawWinPulse(
   grad.addColorStop(1, hexToRgba(theme.winBorder, pulse));
   ctx.fillStyle = grad;
   ctx.fillRect(left, slotTop - 40, right - left, h - slotTop + 40);
+  ctx.restore();
+
+  // WIN label in the theme font with a neon glow, drawn after the additive
+  // pulse so it can't be washed out. White core + heavy dark outline keep it
+  // legible against the same-coloured column (theme-coloured text with a
+  // heavy glow, as before, melted into it).
+  const fontPx = Math.round(w * 0.04);
+  ctx.save();
+  // No "bold" on a theme display face: Creepster ships Regular only, and
+  // Chrome's synthetic bold smears its strokes so the label looks blurred
+  ctx.font = theme.displayFont
+    ? `${fontPx}px ${theme.displayFont}`
+    : `bold ${fontPx}px "Geist", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const cx = (left + right) / 2;
+  const ty = slotTop + 10;
+  // Glow hangs off the dark outline, not the letters, so the white core
+  // stays crisp
+  ctx.lineJoin = "round";
+  ctx.lineWidth = Math.max(4, fontPx * (theme.displayFont ? 0.14 : 0.22));
+  ctx.strokeStyle = "rgba(0,0,0,0.9)";
+  ctx.shadowColor = theme.winGlow;
+  ctx.shadowBlur = 18;
+  ctx.strokeText("WIN", cx, ty);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText("WIN", cx, ty);
   ctx.restore();
 }
 

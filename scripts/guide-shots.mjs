@@ -69,11 +69,11 @@ const phone = {
   hasTouch: true,
 };
 
-async function shot(page, lang, name) {
+async function shot(page, lang, name, opts = {}) {
   const dir = path.join(root, "public", "guide", lang);
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${name}.jpg`);
-  await withTimeout(page.screenshot({ path: file, type: "jpeg", quality: 82 }), 30_000, `screenshot ${name}`);
+  await withTimeout(page.screenshot({ path: file, type: "jpeg", quality: 82, ...opts }), 30_000, `screenshot ${name}`);
   console.log("  saved", path.relative(root, file));
 }
 
@@ -94,6 +94,7 @@ try {
       emit("operator-set-lang", { lang });
       emit("operator-set-theme", { theme });
       emit("operator-set-winner-count", { winnerCount: 3 });
+      emit("operator-set-sudden-death", { enabled: true }); // shows ticked in the panel shot
       await sleep(500);
 
       // Phone: join form, then the waiting screen after joining
@@ -122,7 +123,13 @@ try {
         const op = await opCtx.newPage();
         await op.goto(`${base}/operator`);
         await sleep(1500);
-        await shot(op, lang, "operator-panel");
+        // The whole Game Control card (every setting down to the action
+        // buttons), not just the first screenful
+        const card = await op.locator("div.bg-slate-800.rounded-xl").first().boundingBox();
+        await shot(op, lang, "operator-panel", {
+          fullPage: true,
+          clip: { x: 0, y: 0, width: phone.viewport.width, height: Math.ceil(card.y + card.height + 24) },
+        });
         await opCtx.close();
       }
 

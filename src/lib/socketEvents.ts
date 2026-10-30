@@ -8,6 +8,7 @@ export const C2S = {
   OPERATOR_SET_WINNER_COUNT: "operator-set-winner-count",
   OPERATOR_SET_LANG: "operator-set-lang",
   OPERATOR_SET_THEME: "operator-set-theme",
+  OPERATOR_SET_SUDDEN_DEATH: "operator-set-sudden-death",
   DEBUG_ADD_USERS: "debug-add-users",
   DEBUG_TOGGLE_NAMECHECK: "debug-toggle-namecheck",
   REMOVE_PLAYER: "remove-player",
@@ -32,4 +33,5 @@ export const S2C = {
   WINNER_COUNT_CHANGED: "winner-count-changed",
   LANG_CHANGED: "lang-changed",
   THEME_CHANGED: "theme-changed",
+  SUDDEN_DEATH_CHANGED: "sudden-death-changed",
 } as const;

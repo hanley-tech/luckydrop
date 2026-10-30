@@ -14,6 +14,7 @@ import {
   announceGameStart,
   announceRoundStart,
   announceRetry,
+  announceSuddenDeath,
   announceAllAdvanced,
   announceRoundComplete,
   announceWinner,
@@ -66,6 +67,7 @@ export default function DisplayPage() {
   );
   const [levelId, setLevelId] = useState<LevelId>("classic");
   const [winnerCount, setWinnerCount] = useState(1);
+  const [suddenDeath, setSuddenDeath] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const audioUnlocked = useRef(false);
 
@@ -144,6 +146,7 @@ export default function DisplayPage() {
       setWinner(state.winner);
       setLevelId(state.levelId ?? "classic");
       setWinnerCount(state.winnerCount ?? 1);
+      setSuddenDeath(state.suddenDeath ?? false);
       if (state.phase === "recycling") {
         setDropPhase("recycling");
       } else if (state.phase === "dropping") {
@@ -182,13 +185,15 @@ export default function DisplayPage() {
       setPhase("dropping");
       setRound(1);
       setDropPhase("dropping");
+      setSuddenDeath(false);
       announceGameStart(data.players.length);
     });
 
-    socket.on(S2C.ROUND_START, (data: { players: Player[]; roundNumber: number }) => {
+    socket.on(S2C.ROUND_START, (data: { players: Player[]; roundNumber: number; suddenDeath?: boolean }) => {
       setPhase("dropping");
       setRound(data.roundNumber);
       setDropPhase("dropping");
+      setSuddenDeath(data.suddenDeath ?? false);
       // Count non-eliminated for the announcement
       const activeCount = data.players?.length ?? 0;
       if (data.roundNumber > 1) {
@@ -202,6 +207,7 @@ export default function DisplayPage() {
         advanced: Player[];
         eliminated: Player[];
         roundNumber: number;
+        suddenDeath?: boolean;
       }) => {
         // Mirror server-assigned eliminatedOrder onto local player state so
         // the in-game eliminated sidebar and the winner page can tiebreak
@@ -223,10 +229,16 @@ export default function DisplayPage() {
         );
 
         if (data.eliminated.length === 0 && data.advanced.length === 0) {
-          // Retry — nobody hit center
+          // Retry — nobody hit center. On the final board this may instead
+          // be the start of sudden death.
           setDropPhase("recycling");
           setPhase("recycling");
-          announceRetry();
+          if (data.suddenDeath) {
+            setSuddenDeath(true);
+            announceSuddenDeath();
+          } else {
+            announceRetry();
+          }
         } else if (data.eliminated.length === 0 && data.advanced.length > 1) {
           // Everyone hit center — redrop with same group
           setDropPhase("recycling");
@@ -254,6 +266,7 @@ export default function DisplayPage() {
       setRound(0);
       setWinner(null);
       setDropPhase("dropping");
+      setSuddenDeath(false);
       announceGameReset();
     });
 
@@ -294,6 +307,7 @@ export default function DisplayPage() {
         round={round}
         phase={dropPhase}
         levelId={levelId}
+        suddenDeath={suddenDeath}
         onRoundResult={handleRoundResult}
       />
     );

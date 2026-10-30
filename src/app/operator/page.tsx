@@ -23,6 +23,8 @@ const defaultGameState: GameState = {
   winnerCount: 1,
   lang: "zh",
   theme: "neon",
+  suddenDeathEnabled: false,
+  suddenDeath: false,
 };
 
 export default function OperatorPage() {
@@ -59,14 +61,15 @@ export default function OperatorPage() {
     });
 
     socket.on(S2C.GAME_START, (data: { players: Player[] }) => {
-      setGameState((prev) => ({ ...prev, phase: "dropping", round: 1, activePlayers: data.players }));
+      setGameState((prev) => ({ ...prev, phase: "dropping", round: 1, activePlayers: data.players, suddenDeath: false }));
     });
 
-    socket.on(S2C.ROUND_START, (data: { players: Player[]; roundNumber: number }) => {
+    socket.on(S2C.ROUND_START, (data: { players: Player[]; roundNumber: number; suddenDeath?: boolean }) => {
       setGameState((prev) => ({
         ...prev,
         phase: "dropping",
         round: data.roundNumber,
+        suddenDeath: data.suddenDeath ?? false,
       }));
     });
 
@@ -101,6 +104,10 @@ export default function OperatorPage() {
       setGameState((prev) => ({ ...prev, theme: data.theme }));
     });
 
+    socket.on(S2C.SUDDEN_DEATH_CHANGED, (data: { enabled: boolean }) => {
+      setGameState((prev) => ({ ...prev, suddenDeathEnabled: data.enabled }));
+    });
+
     // The language toggle highlights from this echo (handleSetLang only emits)
     socket.on(S2C.LANG_CHANGED, (data: { lang: Lang }) => {
       setGameState((prev) => ({ ...prev, lang: data.lang }));
@@ -119,6 +126,7 @@ export default function OperatorPage() {
       socket.off(S2C.NAME_CHECK_STATUS);
       socket.off(S2C.LEVEL_CHANGED);
       socket.off(S2C.WINNER_COUNT_CHANGED);
+      socket.off(S2C.SUDDEN_DEATH_CHANGED);
     };
   }, []);
 
@@ -169,6 +177,12 @@ export default function OperatorPage() {
     socket.emit(C2S.OPERATOR_SET_LANG, { lang });
   };
 
+  // Emit only — the checkbox follows the server's SUDDEN_DEATH_CHANGED echo
+  const handleSetSuddenDeath = (enabled: boolean) => {
+    const socket = getSocket();
+    socket.emit(C2S.OPERATOR_SET_SUDDEN_DEATH, { enabled });
+  };
+
   // Emit only, like language — the toggle follows the server's THEME_CHANGED echo
   const handleSetTheme = (theme: ThemeId) => {
     const socket = getSocket();
@@ -200,6 +214,7 @@ export default function OperatorPage() {
           onSetWinnerCount={handleSetWinnerCount}
           onSetLang={handleSetLang}
           onSetTheme={handleSetTheme}
+          onSetSuddenDeath={handleSetSuddenDeath}
         />
 
         <DebugTools

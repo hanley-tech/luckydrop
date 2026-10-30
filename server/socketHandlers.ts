@@ -101,6 +101,15 @@ export function setupSocketHandlers(io: Server): void {
       io.emit(S2C.THEME_CHANGED, { theme: gameState.getState().theme });
     });
 
+    // Operator toggles sudden death for a no-winner final round
+    socket.on(C2S.OPERATOR_SET_SUDDEN_DEATH, (data: { enabled: boolean }) => {
+      if (typeof data?.enabled !== "boolean") return;
+      gameState.setSuddenDeathEnabled(data.enabled);
+      io.emit(S2C.SUDDEN_DEATH_CHANGED, {
+        enabled: gameState.getState().suddenDeathEnabled,
+      });
+    });
+
     // Display reports round result
     socket.on(C2S.ROUND_RESULT, (data: { advancedIds: string[]; eliminatedIds: string[] }) => {
       const result = gameState.reportRoundResult(data.advancedIds, data.eliminatedIds);
@@ -129,14 +138,16 @@ export function setupSocketHandlers(io: Server): void {
           io.emit(S2C.ROUND_START, {
             players: next.players,
             roundNumber: next.roundNumber,
+            suddenDeath: next.suddenDeath,
           });
         }, 3000);
       } else {
-        // retry - nobody hit center
+        // retry - nobody hit center (or, on the final board, sudden death)
         io.emit(S2C.ROUND_COMPLETE, {
           advanced: [],
           eliminated: [],
           roundNumber: result.round,
+          suddenDeath: result.suddenDeath,
         });
         // After a pause for the recycling animation, switch back to dropping
         setTimeout(() => {
@@ -144,6 +155,7 @@ export function setupSocketHandlers(io: Server): void {
           io.emit(S2C.ROUND_START, {
             players: next.players,
             roundNumber: next.roundNumber,
+            suddenDeath: next.suddenDeath,
           });
         }, 3000);
       }

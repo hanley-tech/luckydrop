@@ -280,6 +280,12 @@ export function announceRetry(): void {
   speak(tr("tts.retry"), true);
 }
 
+export function announceSuddenDeath(): void {
+  playSFX("retry", 0.6);
+  sfxEliminate();
+  speak(tr("tts.suddenDeath"), true);
+}
+
 export function announceAllAdvanced(count: number): void {
   playSFX("retry", 0.5);
   speak(tr("tts.allAdvanced", { count }), true);

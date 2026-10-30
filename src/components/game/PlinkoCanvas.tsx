@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import Matter from "matter-js";
-import { Player, LevelId } from "@/types";
+import { Player, LevelId, FINAL_ROUND } from "@/types";
 import * as PhysicsEngine from "./PhysicsEngine";
 import { createBoard, setCenterWidth, BoardGeometry, CenterWidth } from "./PlinkoBoard";
 import { BallManager } from "./BallManager";
@@ -41,12 +41,14 @@ interface PlinkoCanvasProps {
   roundNumber: number;
   isRecycling: boolean;
   levelId: LevelId;
+  /** Misses respawn at the top; the first ball into the win zone wins. */
+  suddenDeath: boolean;
 }
 
 /** Round 1 = widest (5 slots), Round 2 = medium (3 slots), Round 3+ = narrow (1 slot) */
 function getCenterWidth(round: number): CenterWidth {
   if (round <= 1) return "wide";
-  if (round === 2) return "medium";
+  if (round < FINAL_ROUND) return "medium";
   return "narrow";
 }
 
@@ -57,6 +59,7 @@ export default function PlinkoCanvas({
   roundNumber,
   isRecycling,
   levelId,
+  suddenDeath,
 }: PlinkoCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<PhysicsEngine.PhysicsEngineHandle | null>(null);
@@ -88,15 +91,21 @@ export default function PlinkoCanvas({
   // sorts the round's balls by this index, so eliminatedIds reaches the server
   // in settle order and same-round losers display in a deterministic order.
   const reportedLandingsRef = useRef<Map<string, number>>(new Map());
+  // Sudden death: when the first ball lands in the win zone. The board keeps
+  // running for a beat so the winner cue plays out before results go out.
+  const suddenDeathWinRef = useRef<{ playerId: string; at: number } | null>(null);
+  const SUDDEN_DEATH_WIN_HOLD_MS = 1500;
 
   // Keep props in refs so the animation loop always sees the latest values
   // without needing to be re-created (avoids RAF restart gaps)
   const isRecyclingRef = useRef(isRecycling);
+  const suddenDeathRef = useRef(suddenDeath);
   const roundNumberRef = useRef(roundNumber);
   const onBallLandedRef = useRef(onBallLanded);
   const onRoundResultRef = useRef(onRoundResult);
 
   isRecyclingRef.current = isRecycling;
+  suddenDeathRef.current = suddenDeath;
   roundNumberRef.current = roundNumber;
   onBallLandedRef.current = onBallLanded;
   onRoundResultRef.current = onRoundResult;
@@ -137,6 +146,22 @@ export default function PlinkoCanvas({
       }
 
       onRoundResultRef.current(advanced, eliminated);
+    },
+    []
+  );
+
+  /** Sudden death result: the winner advances; everyone else is eliminated,
+   *  ranked by how far down the board their ball got. eliminatedIds is
+   *  lowest-rank first (as in settle order), so the highest ball goes first. */
+  const reportSuddenDeath = useCallback(
+    (ballMgr: BallManager, winnerId: string) => {
+      const others = ballMgr
+        .getAllBalls()
+        .map((ball) => ({ player: ballMgr.getBallPlayer(ball), y: ball.position.y }))
+        .filter((b) => b.player && b.player.id !== winnerId)
+        .sort((a, b) => a.y - b.y)
+        .map((b) => b.player!.id);
+      onRoundResultRef.current([winnerId], others);
     },
     []
   );
@@ -231,8 +256,15 @@ export default function PlinkoCanvas({
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     drawVignette(ctx, canvas.width, canvas.height);
 
+    // Sudden death winner landed: hold for the cue, then report
+    const sdWin = suddenDeathWinRef.current;
+    if (sdWin && !resultReportedRef.current && now - sdWin.at >= SUDDEN_DEATH_WIN_HOLD_MS) {
+      resultReportedRef.current = true;
+      reportSuddenDeath(ballMgr, sdWin.playerId);
+    }
+
     // Real-time individual ball landing detection
-    if (!resultReportedRef.current && !recycling) {
+    if (!resultReportedRef.current && !recycling && !sdWin) {
       const ballR = Math.round((width / 9) * 0.08);
       // Center-zone boundaries (for near-miss detection)
       const sensors = board.slotSensors;
@@ -279,6 +311,22 @@ export default function PlinkoCanvas({
         const px = ball.position.x;
         const py = ball.position.y;
 
+        if (suddenDeathRef.current) {
+          if (inCenter) {
+            // First one in wins — freeze its ranking moment and play the cue
+            onBallLandedRef.current?.(player.id, true);
+            suddenDeathWinRef.current = { playerId: player.id, at: now };
+            directorRef.current?.trigger("winner", px, py, color);
+            break;
+          }
+          // Miss: pop where it landed and drop straight back in at the top
+          particles?.burst(px, py, color, 18, 0.9);
+          particles?.ring(px, py, color, 70, 3);
+          sfxExplosion();
+          ballMgr.respawnBall(ball, width);
+          continue;
+        }
+
         if (inCenter) {
           // The moment a ball drops into the win column it's locked in — call it
           // a win immediately, no need to wait for it to stop bouncing.
@@ -321,7 +369,7 @@ export default function PlinkoCanvas({
     // Report the round the instant every ball has reached the bottom and been
     // classified — no need to wait for them to stop bouncing. (Settle check
     // kept as a fallback in case a ball never reaches the floor threshold.)
-    if (!resultReportedRef.current && !recycling && ballMgr.count > 0) {
+    if (!resultReportedRef.current && !recycling && !suddenDeathRef.current && ballMgr.count > 0) {
       if (reportedLandingsRef.current.size >= ballMgr.count) {
         resultReportedRef.current = true;
         reportResults(ballMgr, board);
@@ -337,7 +385,7 @@ export default function PlinkoCanvas({
     }
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [getBoardSize, reportResults]);
+  }, [getBoardSize, reportResults, reportSuddenDeath]);
 
   // ----- Initialise on mount -----
   useEffect(() => {
@@ -490,6 +538,7 @@ export default function PlinkoCanvas({
       settleFramesRef.current = 0;
       reportedLandingsRef.current = new Map();
       firstCenterDoneRef.current = false;
+      suddenDeathWinRef.current = null;
       roundBallCountRef.current = ballMgr.count;
       deadVisualRef.current.clear();
       directorRef.current?.reset();
@@ -514,6 +563,7 @@ export default function PlinkoCanvas({
       settleFramesRef.current = 0;
       reportedLandingsRef.current = new Map();
       firstCenterDoneRef.current = false;
+      suddenDeathWinRef.current = null;
       roundBallCountRef.current = ballMgr.count;
       deadVisualRef.current.clear();
       directorRef.current?.reset();

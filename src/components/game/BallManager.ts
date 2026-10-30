@@ -124,6 +124,18 @@ export class BallManager {
     this.stuckFrames.clear();
   }
 
+  /** Sudden death: put one ball back at the top to drop again. */
+  respawnBall(body: Matter.Body, boardWidth: number): void {
+    const { x, y } = this.spawnXY(0, this.ballMap.size, boardWidth);
+    Matter.Body.setPosition(body, { x, y });
+    Matter.Body.setVelocity(body, {
+      x: (Math.random() - 0.5) * 1.5,
+      y: Math.random() * 0.5,
+    });
+    Matter.Body.setAngularVelocity(body, 0);
+    this.stuckFrames.delete(body.id);
+  }
+
   /**
    * Returns true when every ball has velocity magnitude below the threshold.
    */
