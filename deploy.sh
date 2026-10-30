@@ -53,6 +53,7 @@ rsync -avz --delete \
     --exclude='.luckydrop.pid' \
     --exclude='deploy.sh' \
     --exclude='.DS_Store' \
+    --exclude='.playwright-mcp' \
     -e "ssh -i $KEY" \
     "$LOCAL_PATH/" "$SERVER:$REMOTE_PATH/"
 
