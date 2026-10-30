@@ -1,4 +1,4 @@
-import { GamePhase, GameState, Player, EmojiId, LevelId, Lang } from "@/types";
+import { GamePhase, GameState, Player, EmojiId, LevelId, Lang, ThemeId } from "@/types";
 import { BALL_EMOJIS } from "@/lib/emojis";
 
 const RANDOM_NAMES = [
@@ -36,6 +36,7 @@ export class GameStateManager {
       levelId: "classic",
       winnerCount: 1,
       lang: "zh",
+      theme: "neon",
     };
   }
 
@@ -56,6 +57,12 @@ export class GameStateManager {
   setLang(lang: Lang): void {
     if (lang !== "zh" && lang !== "en") return;
     this.state.lang = lang;
+  }
+
+  /** Theme is presentation only too, so it is changeable at any time. */
+  setTheme(theme: ThemeId): void {
+    if (theme !== "neon" && theme !== "halloween") return;
+    this.state.theme = theme;
   }
 
   getState(): GameState {

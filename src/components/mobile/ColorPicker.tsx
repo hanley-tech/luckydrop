@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { BALL_EMOJIS } from "@/lib/emojis";
+import { useTheme } from "@/lib/theme";
 import { EmojiId } from "@/types";
 
 interface EmojiPickerProps {
@@ -9,9 +11,18 @@ interface EmojiPickerProps {
 }
 
 export default function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
+  // The active theme's featured emojis come first, in the theme's order
+  const { featuredEmojis } = useTheme();
+  const items = useMemo(() => {
+    const featured = featuredEmojis
+      .map((id) => BALL_EMOJIS.find((e) => e.id === id))
+      .filter((e): e is (typeof BALL_EMOJIS)[number] => !!e);
+    return [...featured, ...BALL_EMOJIS.filter((e) => !featuredEmojis.includes(e.id))];
+  }, [featuredEmojis]);
+
   return (
     <div className="grid grid-cols-6 gap-2 justify-items-center max-h-[40vh] overflow-y-auto p-1">
-      {BALL_EMOJIS.map((item) => {
+      {items.map((item) => {
         const isSelected = selected === item.id;
         return (
           <button

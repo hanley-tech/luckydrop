@@ -1,8 +1,46 @@
 "use client";
 
 import { io, Socket } from "socket.io-client";
+import type { Lang, ThemeId } from "@/types";
+import { S2C } from "@/lib/socketEvents";
 
 let socket: Socket | null = null;
+
+// ---------------------------------------------------------------------------
+// Server-owned display prefs (language + theme), recorded from the moment the
+// socket exists. The server sends its full state only once, on connect, so a
+// hook that subscribes later (e.g. after a lazy import) would otherwise miss
+// it and sit on the default. Recorded via onAny, which pages' blanket
+// socket.off(EVENT) cleanups cannot remove.
+// ---------------------------------------------------------------------------
+
+export interface ServerPrefs {
+  lang?: Lang;
+  theme?: ThemeId;
+}
+
+const prefs: ServerPrefs = {};
+const prefListeners = new Set<(p: ServerPrefs) => void>();
+const PREF_EVENTS = new Set<string>([S2C.GAME_STATE_SYNC, S2C.LANG_CHANGED, S2C.THEME_CHANGED]);
+
+function recordPrefs(event: string, data: unknown): void {
+  if (!PREF_EVENTS.has(event) || !data || typeof data !== "object") return;
+  const d = data as ServerPrefs;
+  if (d.lang) prefs.lang = d.lang;
+  if (d.theme) prefs.theme = d.theme;
+  for (const cb of prefListeners) cb({ ...prefs });
+}
+
+/** Subscribe to the server's language/theme. Replays the latest known values
+ *  immediately, so late subscribers never miss the connect-time sync. */
+export function subscribeServerPrefs(cb: (p: ServerPrefs) => void): () => void {
+  getSocket(); // make sure recording has started
+  prefListeners.add(cb);
+  if (prefs.lang || prefs.theme) cb({ ...prefs });
+  return () => {
+    prefListeners.delete(cb);
+  };
+}
 
 export function getSocket(): Socket {
   if (!socket) {
@@ -19,6 +57,7 @@ export function getSocket(): Socket {
       reconnectionDelayMax: 4000,
       timeout: 8000,
     });
+    socket.onAny(recordPrefs);
 
     // Background tabs get their timers throttled, so socket.io's own reconnect
     // loop can stall after the machine wakes. Nudge it whenever the tab becomes

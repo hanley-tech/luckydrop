@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLang } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 import { Player, LevelId } from "@/types";
 import { getEmoji } from "@/lib/emojis";
@@ -102,6 +103,7 @@ export default function GamePhase({
   onRoundResult,
 }: GamePhaseProps) {
   const { t } = useLang();
+  const theme = useTheme();
   const activePlayers = players.filter((p) => !p.eliminated);
   // Sort eliminated by rank: later round of elimination = higher in the list.
   // Within the same round, the ball that settled *last* ranks higher (it stayed
@@ -150,7 +152,7 @@ export default function GamePhase({
       {/* Fixed 16:9 layout fills the 3840x2160 DisplayFrame */}
       <div className="relative flex w-full h-full">
         {/* Left sidebar: ALL active players stay here for the entire round */}
-        <div className="w-[15%] bg-[#0B1120] border-r border-white/10 flex flex-col overflow-hidden shrink-0">
+        <div className="w-[15%] border-r border-white/10 flex flex-col overflow-hidden shrink-0" style={{ background: theme.sidebarBg }}>
           <div className="px-6 py-6 border-b border-white/10">
             <p className="text-2xl font-bold text-green-400 uppercase tracking-wider">
               {t("game.remaining")}
@@ -167,7 +169,7 @@ export default function GamePhase({
         </div>
 
         {/* Center: Plinko board */}
-        <div className="flex-1 relative bg-[#0F172A]">
+        <div className="flex-1 relative" style={{ background: theme.pageBg }}>
           <PlinkoCanvas
             players={activePlayers}
             roundNumber={round}
@@ -180,9 +182,9 @@ export default function GamePhase({
           {/* Round indicator overlay */}
           <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
             <div className="bg-black/60 backdrop-blur-md rounded-3xl px-14 py-5 border border-white/10">
-              <p className="text-7xl font-black text-white">
+              <p className="text-7xl font-black text-white" style={{ fontFamily: theme.displayFont }}>
                 {t("game.roundPre")}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                <span className="text-transparent bg-clip-text" style={{ backgroundImage: theme.accentGradient }}>
                   {round}
                 </span>
                 {t("game.roundPost")}
@@ -203,7 +205,7 @@ export default function GamePhase({
         </div>
 
         {/* Right sidebar: only previously eliminated players (from past rounds) */}
-        <div className="w-[15%] bg-[#0B1120] border-l border-white/10 flex flex-col overflow-hidden shrink-0">
+        <div className="w-[15%] border-l border-white/10 flex flex-col overflow-hidden shrink-0" style={{ background: theme.sidebarBg }}>
           <div className="px-6 py-6 border-b border-white/10">
             <p className="text-2xl font-bold text-red-400 uppercase tracking-wider">
               {t("game.eliminated")}

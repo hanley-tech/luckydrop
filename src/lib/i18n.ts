@@ -99,6 +99,9 @@ const zh: Dict = {
   "op.nameCheck": "名字审核",
   "op.language": "语言",
   "op.languageHint": "同时改变大屏幕和所有玩家手机上的语言。",
+  "op.theme": "主题",
+  "op.guide": "📖 主持人指南",
+  "op.themeHint": "同时改变大屏幕和所有玩家手机上的外观，比赛中也可切换。",
   "op.winnerHint.one": "决出 1 位冠军，另展示 5 位亚军。",
   "op.winnerHint.many": "前 {n} 名登上领奖台，另展示 5 位亚军。",
 
@@ -205,6 +208,9 @@ const en: Dict = {
   "op.nameCheck": "Name Check",
   "op.language": "Language",
   "op.languageHint": "Changes the big screen and every player\u2019s phone.",
+  "op.theme": "Theme",
+  "op.guide": "📖 Operator Guide",
+  "op.themeHint": "Restyles the big screen and every player\u2019s phone. Works mid-match.",
   "op.winnerHint.one": "Single champion + 5 runners-up shown at the finish.",
   "op.winnerHint.many": "Top {n} on the podium + 5 runners-up shown at the finish.",
 
@@ -325,15 +331,18 @@ export function useLang() {
 export function useServerLang(): void {
   useEffect(() => {
     let cancelled = false;
-    import("@/lib/socket").then(({ getSocket }) => {
+    let unsubscribe: (() => void) | undefined;
+    // subscribeServerPrefs replays the latest value, so the lazy import can't
+    // make us miss the one-time connect sync (which left phones on the default).
+    import("@/lib/socket").then(({ subscribeServerPrefs }) => {
       if (cancelled) return;
-      const socket = getSocket();
-      const apply = (data: { lang?: Lang }) => {
-        if (data?.lang && data.lang !== getLang()) setLang(data.lang);
-      };
-      socket.on("game-state-sync", apply);
-      socket.on("lang-changed", apply);
+      unsubscribe = subscribeServerPrefs(({ lang }) => {
+        if (lang && lang !== getLang()) setLang(lang);
+      });
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 }

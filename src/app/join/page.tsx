@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useLang, useServerLang } from "@/lib/i18n";
+import { assetUrl, useServerTheme, useTheme } from "@/lib/theme";
 import JoinForm from "@/components/mobile/JoinForm";
 import WaitingScreen from "@/components/mobile/WaitingScreen";
 import ConnectionIndicator from "@/components/ConnectionIndicator";
+import SpookyOverlay from "@/components/display/SpookyOverlay";
 import { getSocket } from "@/lib/socket";
 import { S2C } from "@/lib/socketEvents";
 import type { Player, GameState } from "@/types";
@@ -19,6 +21,8 @@ function clearLegacyCookie() {
 export default function JoinPage() {
   const { t } = useLang();
   useServerLang();
+  useServerTheme();
+  const theme = useTheme();
   clearLegacyCookie();
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -119,9 +123,20 @@ export default function JoinPage() {
   }, []);
 
   return (
-    <main className="min-h-dvh bg-[#0F172A] flex flex-col items-center justify-center px-6 py-10">
+    <main
+      className="relative isolate overflow-hidden min-h-dvh flex flex-col items-center justify-center px-6 py-10"
+      style={{
+        background: theme.pageImage
+          ? `linear-gradient(rgba(8,2,14,0.72), rgba(8,2,14,0.72)), url(${assetUrl(theme.pageImage)}) center / cover, ${theme.pageBg}`
+          : theme.pageBg,
+      }}
+    >
       <ConnectionIndicator corner="top-right" />
-      <h1 className="text-3xl font-extrabold text-white mb-8 tracking-tight">
+      <SpookyOverlay scale={0.6} behind />
+      <h1
+        className="text-3xl font-extrabold text-white mb-8 tracking-tight"
+        style={{ fontFamily: theme.displayFont }}
+      >
         {t("app.name")}
       </h1>
 

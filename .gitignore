@@ -46,6 +46,8 @@ public/sounds/*
 # The bundled CC0 default set IS committed; the parent folder stays ignored
 # so licensed/subscription audio can never be added by accident.
 !public/sounds/default/
+# Theme packs are openly licensed too (see each folder's CREDITS.md)
+!public/sounds/halloween/
 
 # Dev screenshots & browser-automation scratch (root-level only)
 /*.png

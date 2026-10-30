@@ -30,6 +30,7 @@ import {
 } from "@/lib/audio";
 import { preloadEmojiImages } from "@/lib/emojiImages";
 import { useLang, useServerLang } from "@/lib/i18n";
+import { useServerTheme } from "@/lib/theme";
 
 function AudioToggle() {
   const { t } = useLang();
@@ -55,6 +56,7 @@ function AudioToggle() {
 export default function DisplayPage() {
   const { t } = useLang();
   useServerLang();
+  useServerTheme();
   const [phase, setPhase] = useState<GamePhase>("lobby");
   const [players, setPlayers] = useState<Player[]>([]);
   const [round, setRound] = useState(0);
@@ -71,6 +73,12 @@ export default function DisplayPage() {
   // start the correct track instead of always forcing lobby music.
   const phaseRef = useRef<GamePhase>(phase);
   phaseRef.current = phase;
+
+  // Latest player list for the join handlers, so announcements happen in the
+  // handler itself — never inside a setState updater, which React may run
+  // twice (it does in dev Strict Mode, doubling every spoken join).
+  const playersRef = useRef<Player[]>(players);
+  playersRef.current = players;
 
   // When the game returns to the lobby (e.g. operator "Restart Match", which
   // arrives as a state-sync rather than a dedicated event), reset the
@@ -153,21 +161,19 @@ export default function DisplayPage() {
 
     // Player events
     socket.on(S2C.PLAYER_JOINED, (data: { player: Player }) => {
-      setPlayers((prev) => {
-        const updated = [...prev, data.player];
-        announcePlayerJoined(data.player.name, updated.length);
-        return updated;
-      });
+      const updated = [...playersRef.current, data.player];
+      playersRef.current = updated; // events can land before the next render
+      setPlayers(updated);
+      announcePlayerJoined(data.player.name, updated.length);
     });
 
     socket.on(S2C.PLAYER_LIST, (data: { players: Player[] }) => {
-      setPlayers((prev) => {
-        const added = data.players.length - prev.length;
-        if (added > 1) {
-          announceBulkJoin(added, data.players.length);
-        }
-        return data.players;
-      });
+      const added = data.players.length - playersRef.current.length;
+      playersRef.current = data.players;
+      setPlayers(data.players);
+      if (added > 1) {
+        announceBulkJoin(added, data.players.length);
+      }
     });
 
     // Game flow events

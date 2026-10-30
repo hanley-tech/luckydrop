@@ -12,6 +12,7 @@ import {
   sfxEliminate,
 } from "./sfx";
 import { tr, getLang } from "@/lib/i18n";
+import { getTheme, THEME_EVENT } from "@/lib/theme";
 
 // Use a getter so Next.js inlines the env var at each call site
 function basePath(): string {
@@ -163,18 +164,48 @@ async function loadSoundConfig(): Promise<SoundConfig> {
   return soundConfig;
 }
 
+/** Sound folder + filenames for the active theme. The default pack resolves
+ *  under /sounds via sounds.json (which points into default/); a theme pack
+ *  (e.g. Halloween) lives in /sounds/<soundDir>/ under the same bare names. A theme pack must
+ *  ship every file — a missing one logs an error (see trackAudioErrors). */
+function soundSource(): { dir: string; cfg: SoundConfig } {
+  const { soundDir } = getTheme();
+  return soundDir
+    ? { dir: `${basePath()}/sounds/${soundDir}`, cfg: THEME_PACK_CONFIG }
+    : { dir: `${basePath()}/sounds`, cfg: soundConfig };
+}
+
+/** A theme pack's filenames: the default set's names without its default/
+ *  folder (e.g. "default/lobby.mp3" -> "lobby.mp3"). */
+const baseName = (f: string) => f.slice(f.lastIndexOf("/") + 1);
+const THEME_PACK_CONFIG: SoundConfig = {
+  sfx: Object.fromEntries(
+    Object.entries(DEFAULT_SOUND_CONFIG.sfx).map(([k, f]) => [k, baseName(f)])
+  ),
+  music: Object.fromEntries(
+    Object.entries(DEFAULT_SOUND_CONFIG.music).map(([k, f]) => [k, baseName(f)])
+  ),
+};
+
 function sfxPaths() {
-  const bp = basePath();
-  const cfg = soundConfig.sfx;
+  const { dir, cfg: full } = soundSource();
+  const cfg = full.sfx;
   return {
-    playerJoined: cfg.playerJoined ? `${bp}/sounds/${cfg.playerJoined}` : null,
-    gameStart: cfg.gameStart ? `${bp}/sounds/${cfg.gameStart}` : null,
-    ballCenter: cfg.ballCenter ? `${bp}/sounds/${cfg.ballCenter}` : null,
-    roundComplete: cfg.roundComplete ? `${bp}/sounds/${cfg.roundComplete}` : null,
-    retry: cfg.retry ? `${bp}/sounds/${cfg.retry}` : null,
-    winnerCheers: cfg.winnerCheers ? `${bp}/sounds/${cfg.winnerCheers}` : null,
-    powerUp: cfg.powerUp ? `${bp}/sounds/${cfg.powerUp}` : null,
+    playerJoined: cfg.playerJoined ? `${dir}/${cfg.playerJoined}` : null,
+    gameStart: cfg.gameStart ? `${dir}/${cfg.gameStart}` : null,
+    ballCenter: cfg.ballCenter ? `${dir}/${cfg.ballCenter}` : null,
+    roundComplete: cfg.roundComplete ? `${dir}/${cfg.roundComplete}` : null,
+    retry: cfg.retry ? `${dir}/${cfg.retry}` : null,
+    winnerCheers: cfg.winnerCheers ? `${dir}/${cfg.winnerCheers}` : null,
+    powerUp: cfg.powerUp ? `${dir}/${cfg.powerUp}` : null,
   };
+}
+
+/** Surface missing/undecodable files loudly instead of failing silently. */
+function trackAudioErrors(el: HTMLAudioElement, path: string): void {
+  el.addEventListener("error", () => {
+    console.error(`[audio] failed to load ${path} (code ${el.error?.code ?? "?"})`);
+  });
 }
 
 type SfxName = keyof ReturnType<typeof sfxPaths>;
@@ -188,6 +219,7 @@ function playSFX(key: SfxName, volume: number = 0.5): void {
   let el = sfxCache.get(path);
   if (!el) {
     el = new Audio(path);
+    trackAudioErrors(el, path);
     sfxCache.set(path, el);
   }
   el.volume = volume;
@@ -200,6 +232,7 @@ function preloadSFX(): void {
     if (!path) continue;
     if (!sfxCache.has(path)) {
       const el = new Audio(path);
+      trackAudioErrors(el, path);
       el.preload = "auto";
       el.load();
       sfxCache.set(path, el);
@@ -318,13 +351,13 @@ export function announceRestartMatch(): void {
 type MusicTrack = "lobby" | "game" | "transition" | "winner";
 
 function musicPaths(): Record<MusicTrack, string | null> {
-  const bp = basePath();
-  const cfg = soundConfig.music;
+  const { dir, cfg: full } = soundSource();
+  const cfg = full.music;
   return {
-    lobby: cfg.lobby ? `${bp}/sounds/${cfg.lobby}` : null,
-    game: cfg.game ? `${bp}/sounds/${cfg.game}` : null,
-    transition: cfg.transition ? `${bp}/sounds/${cfg.transition}` : null,
-    winner: cfg.winner ? `${bp}/sounds/${cfg.winner}` : null,
+    lobby: cfg.lobby ? `${dir}/${cfg.lobby}` : null,
+    game: cfg.game ? `${dir}/${cfg.game}` : null,
+    transition: cfg.transition ? `${dir}/${cfg.transition}` : null,
+    winner: cfg.winner ? `${dir}/${cfg.winner}` : null,
   };
 }
 
@@ -335,8 +368,11 @@ const MUSIC_VOLUMES: Record<MusicTrack, number> = {
   winner: 0.4,
 };
 
-const musicElements = new Map<MusicTrack, HTMLAudioElement>();
+// Keyed by file path, so each theme's version of a track is its own element
+const musicElements = new Map<string, HTMLAudioElement>();
 let currentTrack: MusicTrack | null = null;
+/** The element actually playing — may belong to the previous theme. */
+let currentEl: HTMLAudioElement | null = null;
 const activeIntervals = new Set<ReturnType<typeof setInterval>>();
 
 // Music tempo is the product of two factors: a base rate driven by how far
@@ -347,10 +383,7 @@ let musicSlowFactor = 1;
 
 function applyMusicRate(): void {
   const rate = Math.max(0.5, Math.min(1.6, musicBaseRate * musicSlowFactor));
-  if (currentTrack) {
-    const el = musicElements.get(currentTrack);
-    if (el) el.playbackRate = rate;
-  }
+  if (currentEl) currentEl.playbackRate = rate;
 }
 
 /** Momentarily warp music speed for slow-mo (1 = normal). */
@@ -393,13 +426,14 @@ export function resetMatchIntensity(): void {
 function getMusicElement(track: MusicTrack): HTMLAudioElement | null {
   const path = musicPaths()[track];
   if (!path) return null;
-  let el = musicElements.get(track);
+  let el = musicElements.get(path);
   if (!el) {
     el = new Audio(path);
+    trackAudioErrors(el, path);
     el.loop = true;
     el.volume = 0;
     el.preload = "auto";
-    musicElements.set(track, el);
+    musicElements.set(path, el);
   }
   return el;
 }
@@ -409,9 +443,8 @@ function getMusicElement(track: MusicTrack): HTMLAudioElement | null {
  *  which would cut the music off mid-playback. */
 function preloadMusic(): void {
   for (const track of Object.keys(musicPaths()) as MusicTrack[]) {
-    if (track === currentTrack) continue;
     const el = getMusicElement(track);
-    if (el && el.paused) el.load();
+    if (el && el !== currentEl && el.paused) el.load();
   }
 }
 
@@ -483,22 +516,20 @@ export function playMusic(track: MusicTrack): void {
   }
   activeIntervals.clear();
 
-  const targetVol = MUSIC_VOLUMES[track];
+  const targetVol = Math.min(1, MUSIC_VOLUMES[track] * (getTheme().musicGain ?? 1));
 
   // Fade out old track (if any)
-  if (currentTrack) {
-    const oldEl = getMusicElement(currentTrack);
-    if (oldEl) {
-      const oldVol = oldEl.volume;
-      if (oldVol > 0) {
-        fadeVolume(oldEl, oldVol, 0, 600, () => {
-          oldEl.pause();
-          oldEl.currentTime = 0;
-        });
-      } else {
+  if (currentEl && currentEl !== newEl) {
+    const oldEl = currentEl;
+    const oldVol = oldEl.volume;
+    if (oldVol > 0) {
+      fadeVolume(oldEl, oldVol, 0, 600, () => {
         oldEl.pause();
         oldEl.currentTime = 0;
-      }
+      });
+    } else {
+      oldEl.pause();
+      oldEl.currentTime = 0;
     }
   }
 
@@ -509,6 +540,7 @@ export function playMusic(track: MusicTrack): void {
   fadeVolume(newEl, 0, targetVol, 800);
 
   currentTrack = track;
+  currentEl = newEl;
 }
 
 /** Stop all music */
@@ -518,16 +550,15 @@ export function stopMusic(): void {
   }
   activeIntervals.clear();
 
-  if (currentTrack) {
-    const el = getMusicElement(currentTrack);
-    if (el) {
-      fadeVolume(el, el.volume, 0, 400, () => {
-        el.pause();
-        el.currentTime = 0;
-      });
-    }
-    currentTrack = null;
+  if (currentEl) {
+    const el = currentEl;
+    fadeVolume(el, el.volume, 0, 400, () => {
+      el.pause();
+      el.currentTime = 0;
+    });
   }
+  currentTrack = null;
+  currentEl = null;
 }
 
 export function setMusicEnabled(enabled: boolean): void {
@@ -585,5 +616,19 @@ export function unlockAudio(): void {
   loadSoundConfig().then(() => {
     preloadMusic();
     preloadSFX();
+  });
+}
+
+// When the operator switches theme mid-session, crossfade the current track to
+// the new theme's version and warm up the new pack's files.
+if (typeof window !== "undefined") {
+  window.addEventListener(THEME_EVENT, () => {
+    const track = currentTrack;
+    preloadSFX();
+    preloadMusic();
+    if (track) {
+      currentTrack = null; // force playMusic past its same-track early return
+      playMusic(track);
+    }
   });
 }

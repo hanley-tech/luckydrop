@@ -106,6 +106,10 @@ export const BALL_EMOJIS: BallEmoji[] = [
   { id: "money", emoji: "\u{1F911}", name: "Money Face", bgColor: "#22C55E" },
   { id: "rage", emoji: "\u{1F92C}", name: "Rage", bgColor: "#EF4444" },
   { id: "shush", emoji: "\u{1F92B}", name: "Shush", bgColor: "#F59E0B" },
+  // Halloween
+  { id: "pumpkin", emoji: "\u{1F383}", name: "Jack-o'-lantern", bgColor: "#F97316" },
+  { id: "spider", emoji: "\u{1F577}\u{FE0F}", name: "Spider", bgColor: "#8B5CF6" },
+  { id: "candy", emoji: "\u{1F36C}", name: "Candy", bgColor: "#EC4899" },
 ];
 
 export function getEmoji(id: EmojiId): string {

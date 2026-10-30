@@ -6,6 +6,7 @@ import { Player } from "@/types";
 import { tr } from "@/lib/i18n";
 import { BALL_EMOJIS, getEmoji, getEmojiBgColor } from "@/lib/emojis";
 import { getEmojiImage } from "@/lib/emojiImages";
+import { getTheme, getThemeImage, useTheme } from "@/lib/theme";
 import * as PhysicsEngine from "@/components/game/PhysicsEngine";
 import { BALL_FILTER, PEG_FILTER } from "@/components/game/PhysicsEngine";
 
@@ -100,7 +101,11 @@ function getMiniBg(
   width: number,
   height: number
 ): HTMLCanvasElement {
-  const key = `${width}x${height}-${board.pegs.length}`;
+  const theme = getTheme();
+  const plate = theme.boardImage ? getThemeImage(theme.boardImage) : null;
+  const pegImg = theme.pegEmoji ? getEmojiImage(theme.pegEmoji) : null;
+  // Re-bake once the plate / peg sprite arrive
+  const key = `${theme.id}-${width}x${height}-${board.pegs.length}-${plate ? "p" : ""}${pegImg ? "e" : ""}`;
   if (miniBg && miniBgKey === key) return miniBg;
 
   const c = document.createElement("canvas");
@@ -109,16 +114,42 @@ function getMiniBg(
   const ctx = c.getContext("2d")!;
 
   const bg = ctx.createLinearGradient(0, 0, 0, height);
-  bg.addColorStop(0, "#05060f");
-  bg.addColorStop(1, "#0a0a1c");
+  bg.addColorStop(0, theme.bgTop);
+  bg.addColorStop(1, theme.bgBottom);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
+
+  if (plate) {
+    const scale = Math.max(width / plate.naturalWidth, height / plate.naturalHeight);
+    const pw = plate.naturalWidth * scale;
+    const ph = plate.naturalHeight * scale;
+    ctx.drawImage(plate, (width - pw) / 2, (height - ph) / 2, pw, ph);
+    ctx.fillStyle = "rgba(8,2,14,0.35)";
+    ctx.fillRect(0, 0, width, height);
+  } else if (theme.backdrop === "spooky") {
+    // Baked harvest moon (the full board animates bats + fog; the demo stays static)
+    const mx = width * 0.78;
+    const my = height * 0.1;
+    const mr = width * 0.09;
+    const halo = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 3);
+    halo.addColorStop(0, "rgba(255,170,60,0.28)");
+    halo.addColorStop(1, "rgba(255,170,60,0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(mx - mr * 3, my - mr * 3, mr * 6, mr * 6);
+    const disc = ctx.createRadialGradient(mx - mr * 0.3, my - mr * 0.3, mr * 0.1, mx, my, mr);
+    disc.addColorStop(0, "#fff1c9");
+    disc.addColorStop(1, "#f2a640");
+    ctx.fillStyle = disc;
+    ctx.beginPath();
+    ctx.arc(mx, my, mr, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   const cell = Math.max(22, Math.round(width / 10));
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
   ctx.lineWidth = 1;
-  ctx.strokeStyle = "rgba(46,128,224,0.14)";
+  ctx.strokeStyle = theme.grid;
   ctx.beginPath();
   for (let x = 0; x <= width; x += cell) {
     ctx.moveTo(x, 0);
@@ -133,15 +164,28 @@ function getMiniBg(
 
   for (const peg of board.pegs) {
     const r = (peg as Matter.Body & { circleRadius?: number }).circleRadius ?? 4;
+    if (pegImg) {
+      const s = Math.round(r * 2.8);
+      ctx.save();
+      ctx.shadowColor = theme.pegGlow;
+      ctx.shadowBlur = r * 2.2;
+      ctx.fillStyle = theme.pegGlow;
+      ctx.beginPath();
+      ctx.arc(peg.position.x, peg.position.y, r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.drawImage(pegImg, peg.position.x - s / 2, peg.position.y - s / 2, s, s);
+      continue;
+    }
     ctx.save();
-    ctx.shadowColor = "rgba(56,196,255,0.9)";
+    ctx.shadowColor = theme.pegGlow;
     ctx.shadowBlur = r * 2.2;
-    ctx.fillStyle = "rgba(56,196,255,0.9)";
+    ctx.fillStyle = theme.pegGlow;
     ctx.beginPath();
     ctx.arc(peg.position.x, peg.position.y, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = "#cdf3ff";
+    ctx.fillStyle = theme.pegCore;
     ctx.beginPath();
     ctx.arc(peg.position.x, peg.position.y, r * 0.6, 0, Math.PI * 2);
     ctx.fill();
@@ -160,7 +204,8 @@ function getMiniBallSprite(
   r: number
 ): HTMLCanvasElement {
   const img = getEmojiImage(emojiId);
-  const key = `${emojiId}-${color}-${r}-${img ? "img" : "txt"}`;
+  const theme = getTheme();
+  const key = `${theme.id}-${emojiId}-${color}-${r}-${img ? "img" : "txt"}`;
   const cached = miniBallCache.get(key);
   if (cached) return cached;
 
@@ -186,8 +231,8 @@ function getMiniBallSprite(
   ctx.restore();
 
   const core = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
-  core.addColorStop(0, "rgba(20,24,40,0.92)");
-  core.addColorStop(1, "rgba(6,8,18,0.96)");
+  core.addColorStop(0, theme.ballCoreInner);
+  core.addColorStop(1, theme.ballCoreOuter);
   ctx.fillStyle = core;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -230,17 +275,21 @@ function drawMiniBoard(
 
   const r = board.ballR;
   const pad = Math.round(r * 1.9);
+  const demoEmoji = getTheme().demoEmoji;
   for (const { body, player } of balls) {
-    const color = getEmojiBgColor(player.emoji);
+    const isDummy = player.id.startsWith("dummy-");
+    // Dummies wear the theme's mascot, picked at draw time like their label
+    const emoji = isDummy ? demoEmoji : player.emoji;
+    const color = getEmojiBgColor(emoji);
     const cx = body.position.x;
     const cy = body.position.y;
 
-    ctx.drawImage(getMiniBallSprite(player.emoji, color, r), cx - pad, cy - pad);
+    ctx.drawImage(getMiniBallSprite(emoji, color, r), cx - pad, cy - pad);
 
     // Dummy balls are labelled from the dictionary at draw time, so flipping
     // language updates them on the next frame instead of needing the demo
     // (and its physics world) to be torn down and rebuilt.
-    const label = player.id.startsWith("dummy-")
+    const label = isDummy
       ? tr("lobby.demoName")
       : player.name;
 
@@ -266,6 +315,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 export default function LobbyDemoCanvas({ players }: LobbyDemoCanvasProps) {
+  const theme = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<PhysicsEngine.PhysicsEngineHandle | null>(null);
   const boardRef = useRef<MiniBoard | null>(null);
@@ -421,7 +471,7 @@ export default function LobbyDemoCanvas({ players }: LobbyDemoCanvasProps) {
     <canvas
       ref={canvasRef}
       className="block"
-      style={{ background: "#05060f" }}
+      style={{ background: theme.bgTop }}
     />
   );
 }

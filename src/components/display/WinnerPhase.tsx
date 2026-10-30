@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import { useLang } from "@/lib/i18n";
+import { assetUrl, useTheme, Theme } from "@/lib/theme";
 import confetti from "canvas-confetti";
 import { Player } from "@/types";
 import { getEmoji } from "@/lib/emojis";
+import SpookyOverlay from "./SpookyOverlay";
 
 interface WinnerPhaseProps {
   winner: Player;
@@ -28,8 +30,6 @@ function rankPlayers(winner: Player, players: Player[]): Player[] {
     });
   return [winner, ...others];
 }
-
-const CONFETTI_COLORS = ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#ff3ea5"];
 
 // Gradient accents for places 1..5
 const PLACE_ACCENTS = [
@@ -68,11 +68,25 @@ function RunnersUp({ players, startPlace }: { players: Player[]; startPlace: num
 
 export default function WinnerPhase({ winner, players, winnerCount = 1 }: WinnerPhaseProps) {
   const { t } = useLang();
+  const theme = useTheme();
   const podiumSize = Math.max(1, winnerCount);
+  const confettiColors = theme.confetti;
+  const confettiEmojis = theme.confettiEmojis;
 
   useEffect(() => {
     const duration = 7000;
     const end = Date.now() + duration;
+
+    // Themed emoji confetti (🎃🦇👻…) thrown alongside the paper bits.
+    // shapeFromText bakes at a scalar, so emoji bursts use that same scalar.
+    const EMOJI_SCALAR = 3;
+    const emojiShapes = (confettiEmojis ?? []).map((text) =>
+      confetti.shapeFromText({ text, scalar: EMOJI_SCALAR })
+    );
+    const emojiBurst = (opts: confetti.Options) => {
+      if (emojiShapes.length === 0) return;
+      confetti({ ...opts, shapes: emojiShapes, scalar: EMOJI_SCALAR, flat: true });
+    };
 
     // Continuous side cannons — default (square/circle) confetti tumbles in 3D
     // and a high start velocity + wide spread throws it across the screen.
@@ -86,7 +100,7 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
         ticks: 260,
         scalar: 1.15,
         origin: { x: 0, y: 0.8 },
-        colors: CONFETTI_COLORS,
+        colors: confettiColors,
       });
       confetti({
         particleCount: 9,
@@ -97,8 +111,12 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
         ticks: 260,
         scalar: 1.15,
         origin: { x: 1, y: 0.8 },
-        colors: CONFETTI_COLORS,
+        colors: confettiColors,
       });
+      if (Math.random() < 0.12) {
+        emojiBurst({ particleCount: 1, angle: 60, spread: 70, startVelocity: 70, ticks: 320, origin: { x: 0, y: 0.8 } });
+        emojiBurst({ particleCount: 1, angle: 120, spread: 70, startVelocity: 70, ticks: 320, origin: { x: 1, y: 0.8 } });
+      }
       if (Date.now() < end) requestAnimationFrame(frame);
     };
 
@@ -110,7 +128,7 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
       ticks: 300,
       scalar: 1.25,
       origin: { x: 0.5, y: 0.5 },
-      colors: CONFETTI_COLORS,
+      colors: confettiColors,
     });
     confetti({
       particleCount: 160,
@@ -119,10 +137,17 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
       ticks: 320,
       scalar: 1.1,
       origin: { x: 0.5, y: 0.45 },
-      colors: CONFETTI_COLORS,
+      colors: confettiColors,
+    });
+    emojiBurst({
+      particleCount: 40,
+      spread: 160,
+      startVelocity: 70,
+      ticks: 340,
+      origin: { x: 0.5, y: 0.5 },
     });
     frame();
-  }, [podiumSize]);
+  }, [podiumSize, confettiColors, confettiEmojis]);
 
   const ranking = useMemo(() => rankPlayers(winner, players), [winner, players]);
   const podium = ranking.slice(0, podiumSize);
@@ -132,9 +157,12 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
   if (podium.length === 1) {
     const emoji = getEmoji(winner.emoji);
     return (
-      <Shell>
+      <Shell theme={theme}>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-12 pb-[18%]">
-          <h1 className="text-[12rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 animate-bounce tracking-wider leading-none">
+          <h1
+            className="text-[12rem] font-black text-transparent bg-clip-text animate-bounce tracking-wider leading-none"
+            style={{ backgroundImage: theme.titleGradient, fontFamily: theme.displayFont }}
+          >
             {t("winner.title")}
           </h1>
           <div className="text-[14rem] leading-none">{emoji}</div>
@@ -151,9 +179,12 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
   const champion = podium[0];
   const rest = podium.slice(1);
   return (
-    <Shell>
+    <Shell theme={theme}>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-10 px-12 pb-[14%]">
-        <h1 className="text-[7rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 tracking-wider leading-none">
+        <h1
+          className="text-[7rem] font-black text-transparent bg-clip-text tracking-wider leading-none"
+          style={{ backgroundImage: theme.titleGradient, fontFamily: theme.displayFont }}
+        >
           TOP {podiumSize}
         </h1>
 
@@ -196,19 +227,27 @@ export default function WinnerPhase({ winner, players, winnerCount = 1 }: Winner
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, theme }: { children: React.ReactNode; theme: Theme }) {
   return (
-    <div className="w-full h-full bg-[#05060f] flex items-center justify-center relative overflow-hidden">
+    <div
+      className="w-full h-full flex items-center justify-center relative overflow-hidden"
+      style={{
+        background: theme.pageImage
+          ? `linear-gradient(rgba(8,2,14,0.6), rgba(8,2,14,0.6)), url(${assetUrl(theme.pageImage)}) center / cover`
+          : theme.winnerBg,
+      }}
+    >
       <div
         className="absolute inset-0 opacity-20"
         style={{
-          background: "radial-gradient(circle at 50% 45%, #FFD700, transparent 70%)",
+          background: `radial-gradient(circle at 50% 45%, ${theme.winnerGlow}, transparent 70%)`,
         }}
       />
       <div
-        className="absolute w-[1000px] h-[1000px] rounded-full border-2 border-yellow-400 opacity-10 animate-spin"
-        style={{ animationDuration: "20s" }}
+        className="absolute w-[1000px] h-[1000px] rounded-full border-2 opacity-10 animate-spin"
+        style={{ animationDuration: "20s", borderColor: theme.winnerGlow }}
       />
+      <SpookyOverlay scale={3} />
       <div className="relative z-10 w-full h-full">{children}</div>
     </div>
   );

@@ -7,6 +7,8 @@
  * two concerns stay decoupled.
  */
 
+import { getTheme } from "@/lib/theme";
+
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let enabled = true;
@@ -79,6 +81,8 @@ interface ToneOpts {
   /** Optional start delay in seconds */
   delay?: number;
   detune?: number;
+  /** Pitch wobble: rate in Hz and depth in Hz (theremin / ghost voices) */
+  vibrato?: { rate: number; depth: number };
 }
 
 function tone(o: ToneOpts): void {
@@ -94,6 +98,16 @@ function tone(o: ToneOpts): void {
   osc.type = o.type ?? "sine";
   osc.frequency.setValueAtTime(o.freq, t0);
   if (o.detune) osc.detune.setValueAtTime(o.detune, t0);
+  if (o.vibrato) {
+    const lfo = ac.createOscillator();
+    const depth = ac.createGain();
+    lfo.frequency.value = o.vibrato.rate;
+    depth.gain.value = o.vibrato.depth;
+    lfo.connect(depth);
+    depth.connect(osc.frequency);
+    lfo.start(t0);
+    lfo.stop(t0 + dur + release);
+  }
   if (o.freqExpTo) {
     osc.frequency.exponentialRampToValueAtTime(
       Math.max(1, o.freqExpTo),
@@ -183,6 +197,7 @@ let pegVoices = 0;
  */
 export function sfxPeg(intensity = 0.5): void {
   if (!enabled) return;
+  if (isSpooky()) return spookyPeg(intensity);
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   if (now - lastPeg < 90) return; // generous debounce — gentle patter, not a wall
   if (pegVoices > 2) return; // very few simultaneous
@@ -222,6 +237,7 @@ export function sfxWhoosh(power = 0.5): void {
 /** Time-bend "wooomp" as slow-mo engages. */
 export function sfxSlowmoEnter(): void {
   if (!enabled) return;
+  if (isSpooky()) return spookySlowmoEnter();
   tone({
     type: "sawtooth",
     freq: 620,
@@ -256,6 +272,7 @@ export function sfxSlowmoExit(): void {
 /** A ball drops into the WIN slot: synth zap + sub boom. */
 export function sfxWin(big = false): void {
   if (!enabled) return;
+  if (isSpooky()) return spookyWin(big);
   // Zap
   tone({
     type: "square",
@@ -311,6 +328,7 @@ export function sfxEliminate(): void {
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   if (now - lastElim < 32) return;
   lastElim = now;
+  if (isSpooky()) return spookyGhostWail(0.7);
   // Detuned descending square — clearly "down/out"
   tone({ type: "sawtooth", freq: 320, freqExpTo: 90, dur: 0.22, gain: 0.1, lp: 1800 });
   tone({ type: "square", freq: 220, freqExpTo: 70, dur: 0.18, gain: 0.06, lp: 1400 });
@@ -327,6 +345,7 @@ export function sfxExplosion(): void {
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   if (now - lastExpl < 55) return;
   lastExpl = now;
+  if (isSpooky()) return spookyGhostWail(1);
   const p = 0.88 + Math.random() * 0.24; // slight pitch variance per blast
   // Initial crack
   noise({ dur: 0.05, gain: 0.1, type: "highpass", freq: 3500 });
@@ -342,6 +361,7 @@ let lastStar = 0;
  *  big winner zap and from the death thud). */
 export function sfxStar(): void {
   if (!enabled) return;
+  if (isSpooky()) return spookyStar();
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   if (now - lastStar < 28) return;
   lastStar = now;
@@ -352,6 +372,7 @@ export function sfxStar(): void {
 /** Bright arpeggiated synth fanfare for the winner. */
 export function sfxWinnerFanfare(): void {
   if (!enabled) return;
+  if (isSpooky()) return spookyFanfare();
   // C major triad climbing two octaves
   const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98];
   notes.forEach((f, i) => {
@@ -386,6 +407,7 @@ export function sfxWinnerFanfare(): void {
 /** Game-start drop cue — descending noise sweep + sub hit. */
 export function sfxDrop(): void {
   if (!enabled) return;
+  if (isSpooky()) return spookyThunder();
   noise({
     dur: 0.5,
     gain: 0.1,
@@ -424,7 +446,9 @@ function schedulePulse(): void {
     pulseTimer = null;
     return;
   }
-  if (enabled) {
+  if (enabled && isSpooky()) {
+    spookyHeartbeat(pulseIntensity);
+  } else if (enabled) {
     const i = pulseIntensity;
     // Deep kick that gets punchier with intensity
     tone({
@@ -447,4 +471,139 @@ function schedulePulse(): void {
 
 export function stopTensionPulse(): void {
   setTensionPulse(0);
+}
+
+// ---------------------------------------------------------------------------
+// Halloween voices — used instead of the neon ones while the active theme's
+// backdrop is "spooky". Same call sites, same throttles.
+// ---------------------------------------------------------------------------
+
+function isSpooky(): boolean {
+  return getTheme().backdrop === "spooky";
+}
+
+// A-minor pentatonic across two octaves: any random pick sounds "on key"
+const SPOOKY_SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25];
+
+let pegVoicesSpooky = 0;
+
+/** Bone-xylophone tock: hollow triangle + octave, random pentatonic note. */
+function spookyPeg(intensity: number): void {
+  const now = typeof performance !== "undefined" ? performance.now() : 0;
+  if (now - lastPeg < 90 || pegVoicesSpooky > 2) return;
+  lastPeg = now;
+  pegVoicesSpooky++;
+  const i = Math.max(0, Math.min(1, intensity));
+  const idx = Math.min(
+    SPOOKY_SCALE.length - 1,
+    Math.floor(i * 5 + Math.random() * 4)
+  );
+  const f = SPOOKY_SCALE[idx];
+  tone({ type: "triangle", freq: f, dur: 0.12, gain: 0.03 + i * 0.03, attack: 0.001, lp: 2400 });
+  tone({ type: "sine", freq: f * 2, dur: 0.06, gain: 0.012 + i * 0.01, attack: 0.001 });
+  setTimeout(() => {
+    pegVoicesSpooky = Math.max(0, pegVoicesSpooky - 1);
+  }, 90);
+}
+
+/** Ghostly "woooOOoo" — falling theremin with vibrato + an airy breath. */
+function spookyGhostWail(power: number): void {
+  const p = 0.85 + Math.random() * 0.3;
+  tone({
+    type: "sine",
+    freq: 760 * p,
+    freqExpTo: 300 * p,
+    dur: 0.55 + power * 0.25,
+    gain: 0.08 + power * 0.06,
+    attack: 0.06,
+    vibrato: { rate: 6.5, depth: 22 },
+  });
+  tone({
+    type: "triangle",
+    freq: 380 * p,
+    freqExpTo: 150 * p,
+    dur: 0.5 + power * 0.2,
+    gain: 0.04,
+    attack: 0.05,
+    lp: 1200,
+    vibrato: { rate: 5.5, depth: 10 },
+  });
+  noise({ dur: 0.4, gain: 0.03, type: "bandpass", freq: 900, freqTo: 400, q: 2 });
+}
+
+/** Theremin swoop down as slow-mo kicks in. */
+function spookySlowmoEnter(): void {
+  tone({
+    type: "sine",
+    freq: 900,
+    freqExpTo: 180,
+    dur: 0.8,
+    gain: 0.12,
+    attack: 0.03,
+    vibrato: { rate: 7, depth: 30 },
+  });
+}
+
+/** Church bell: inharmonic partials with a long ring, plus a low boom. */
+function bell(fundamental: number, gain: number, delay = 0): void {
+  const partials: [number, number, number][] = [
+    // [ratio, relative gain, duration s]
+    [0.5, 0.6, 1.8],
+    [1, 1, 1.6],
+    [2, 0.5, 1.1],
+    [2.76, 0.35, 0.9],
+    [5.4, 0.18, 0.5],
+  ];
+  for (const [ratio, g, dur] of partials) {
+    tone({ type: "sine", freq: fundamental * ratio, dur, gain: gain * g, attack: 0.002, delay });
+  }
+}
+
+/** A ball lands in the WIN zone — a bell toll (bigger + lower for the decider). */
+function spookyWin(big: boolean): void {
+  bell(big ? 196 : 262, big ? 0.12 : 0.08);
+  if (big) tone({ type: "sine", freq: 90, freqExpTo: 40, dur: 0.6, gain: 0.2, attack: 0.004 });
+}
+
+let lastSpookyStar = 0;
+
+/** Later WIN-zone landings — a quick celesta-style minor sparkle. */
+function spookyStar(): void {
+  const now = typeof performance !== "undefined" ? performance.now() : 0;
+  if (now - lastSpookyStar < 28) return;
+  lastSpookyStar = now;
+  [659.25, 783.99, 987.77].forEach((f, i) =>
+    tone({ type: "triangle", freq: f * 2, dur: 0.18, gain: 0.05, delay: i * 0.05, lp: 9000 })
+  );
+}
+
+/** Winner: a minor-key pipe-organ run ending on a held chord. */
+function spookyFanfare(): void {
+  // A minor arpeggio climbing, then an A-minor chord held with a fifth below
+  const run = [220, 261.63, 329.63, 440, 523.25, 659.25];
+  run.forEach((f, i) => {
+    tone({ type: "sawtooth", freq: f, dur: 0.2, gain: 0.07, delay: i * 0.09, lp: 2600 });
+    tone({ type: "square", freq: f / 2, dur: 0.2, gain: 0.04, delay: i * 0.09, lp: 1400 });
+  });
+  const hold = run.length * 0.09;
+  for (const f of [220, 261.63, 329.63, 440, 110]) {
+    tone({ type: "sawtooth", freq: f, dur: 1.4, gain: 0.05, attack: 0.03, delay: hold, lp: 2200, detune: 4 });
+    tone({ type: "square", freq: f, dur: 1.4, gain: 0.025, attack: 0.03, delay: hold, lp: 1600, detune: -4 });
+  }
+  bell(196, 0.08, hold);
+}
+
+/** Match start — a thunder crack rolling into a long rumble. */
+function spookyThunder(): void {
+  noise({ dur: 0.08, gain: 0.14, type: "highpass", freq: 2500 });
+  noise({ dur: 1.4, gain: 0.18, type: "lowpass", freq: 900, freqTo: 70, delay: 0.04 });
+  noise({ dur: 0.9, gain: 0.08, type: "lowpass", freq: 400, freqTo: 60, delay: 0.5 });
+  tone({ type: "sine", freq: 70, freqExpTo: 32, dur: 1.2, gain: 0.18, attack: 0.02 });
+}
+
+/** Tension pulse as a lub-dub heartbeat that speeds up with the pulse. */
+function spookyHeartbeat(i: number): void {
+  const g = 0.14 + i * 0.12;
+  tone({ type: "sine", freq: 70, freqExpTo: 38, dur: 0.16, gain: g, attack: 0.004 });
+  tone({ type: "sine", freq: 62, freqExpTo: 34, dur: 0.14, gain: g * 0.7, attack: 0.004, delay: 0.17 });
 }

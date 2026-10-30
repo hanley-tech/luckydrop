@@ -13,6 +13,8 @@ import { ParticleField, hexToRgb, RGB } from "./fx/particles";
 import { Director } from "./fx/director";
 import { sfxPeg, sfxExplosion, sfxStar } from "@/lib/sfx";
 import { getEmojiBgColor } from "@/lib/emojis";
+import { getTheme } from "@/lib/theme";
+import { notePegHit, spawnRisingGhost } from "./fx/spooky";
 
 const NEUTRAL: RGB = { r: 120, g: 200, b: 255 };
 
@@ -196,7 +198,7 @@ export default function PlinkoCanvas({
 
     // Clear full canvas in screen space (covers letterboxing when zoomed)
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = "#05060f";
+    ctx.fillStyle = getTheme().bgTop;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     camera?.begin(ctx);
@@ -307,6 +309,7 @@ export default function PlinkoCanvas({
           reportedLandingsRef.current.set(player.id, reportedLandingsRef.current.size);
           onBallLandedRef.current?.(player.id, false);
           deadVisualRef.current.add(player.id);
+          spawnRisingGhost(px, py, now);
           particles?.burst(px, py, color, 30, 1.2);
           particles?.ring(px, py, color, 95, 4);
           particles?.ring(px, py, { r: 255, g: 255, b: 255 }, 55, 3);
@@ -394,6 +397,7 @@ export default function PlinkoCanvas({
           other = a;
         }
         if (!ball || !other || other.label !== "peg") continue;
+        notePegHit(other.id, performance.now());
 
         const speed = Math.sqrt(
           ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y

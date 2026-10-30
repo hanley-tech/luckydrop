@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useLang, useServerLang } from "@/lib/i18n";
+import { useServerTheme } from "@/lib/theme";
 import { getSocket } from "@/lib/socket";
 import { C2S, S2C } from "@/lib/socketEvents";
-import { GameState, Player, LevelId, Lang } from "@/types";
+import { GameState, Player, LevelId, Lang, ThemeId } from "@/types";
 import { getEmoji } from "@/lib/emojis";
 import ControlPanel from "@/components/operator/ControlPanel";
 import DebugTools from "@/components/operator/DebugTools";
@@ -20,12 +22,14 @@ const defaultGameState: GameState = {
   levelId: "classic",
   winnerCount: 1,
   lang: "zh",
+  theme: "neon",
 };
 
 export default function OperatorPage() {
   const { t } = useLang();
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
   useServerLang();
+  useServerTheme();
 
   useEffect(() => {
     document.title = "Operator · LuckyDrop";
@@ -71,7 +75,8 @@ export default function OperatorPage() {
     });
 
     socket.on(S2C.GAME_RESET, () => {
-      setGameState(defaultGameState);
+      // Language and theme survive a server reset, so keep showing them
+      setGameState((prev) => ({ ...defaultGameState, lang: prev.lang, theme: prev.theme }));
     });
 
     socket.on(
@@ -92,8 +97,19 @@ export default function OperatorPage() {
       setGameState((prev) => ({ ...prev, winnerCount: data.winnerCount }));
     });
 
+    socket.on(S2C.THEME_CHANGED, (data: { theme: ThemeId }) => {
+      setGameState((prev) => ({ ...prev, theme: data.theme }));
+    });
+
+    // The language toggle highlights from this echo (handleSetLang only emits)
+    socket.on(S2C.LANG_CHANGED, (data: { lang: Lang }) => {
+      setGameState((prev) => ({ ...prev, lang: data.lang }));
+    });
+
     return () => {
       socket.off(S2C.GAME_STATE_SYNC);
+      socket.off(S2C.THEME_CHANGED);
+      socket.off(S2C.LANG_CHANGED);
       socket.off(S2C.PLAYER_LIST);
       socket.off(S2C.PLAYER_JOINED);
       socket.off(S2C.GAME_START);
@@ -153,11 +169,27 @@ export default function OperatorPage() {
     socket.emit(C2S.OPERATOR_SET_LANG, { lang });
   };
 
+  // Emit only, like language — the toggle follows the server's THEME_CHANGED echo
+  const handleSetTheme = (theme: ThemeId) => {
+    const socket = getSocket();
+    socket.emit(C2S.OPERATOR_SET_THEME, { theme });
+  };
+
   return (
     <div className="min-h-screen bg-[#0F172A] p-6">
       <ConnectionIndicator corner="top-right" />
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-4xl font-black text-white">{t("op.title")}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-4xl font-black text-white">{t("op.title")}</h1>
+          {/* New tab, so the live panel stays open while reading */}
+          <Link
+            href="/operator/guide"
+            target="_blank"
+            className="rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 font-bold text-slate-200 hover:border-slate-400"
+          >
+            {t("op.guide")}
+          </Link>
+        </div>
 
         <ControlPanel
           gameState={gameState}
@@ -167,6 +199,7 @@ export default function OperatorPage() {
           onSetLevel={handleSetLevel}
           onSetWinnerCount={handleSetWinnerCount}
           onSetLang={handleSetLang}
+          onSetTheme={handleSetTheme}
         />
 
         <DebugTools

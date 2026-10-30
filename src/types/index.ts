@@ -5,6 +5,9 @@ export type LevelId = "classic" | "cannon" | "tray";
 /** UI language. Owned by the server so the operator drives every screen. */
 export type Lang = "zh" | "en";
 
+/** Visual theme. Server-owned like Lang; palettes live in src/lib/theme.ts. */
+export type ThemeId = "neon" | "halloween";
+
 export interface Player {
   id: string;
   name: string;
@@ -33,6 +36,8 @@ export interface GameState {
   winnerCount: number;
   /** Language for every connected view; set from the operator panel. */
   lang: Lang;
+  /** Visual theme for every connected view; set from the operator panel. */
+  theme: ThemeId;
 }
 
 export interface JoinRequest {

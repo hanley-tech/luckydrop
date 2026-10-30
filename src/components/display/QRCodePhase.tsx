@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/i18n";
+import { assetUrl, useTheme } from "@/lib/theme";
 import { QRCodeSVG } from "qrcode.react";
 import { Player } from "@/types";
 import PlayerList from "./PlayerList";
 import LobbyDemoCanvas from "./LobbyDemoCanvas";
+import SpookyOverlay from "./SpookyOverlay";
 
 interface QRCodePhaseProps {
   players: Player[];
@@ -20,9 +22,20 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
   }, []);
 
   const { t } = useLang();
+  const theme = useTheme();
 
   return (
-    <div className="w-full h-full bg-[#0F172A] flex p-10 gap-8">
+    <div
+      className="relative isolate w-full h-full flex p-10 gap-8"
+      style={{
+        background: theme.pageImage
+          ? `linear-gradient(rgba(8,2,14,0.45), rgba(8,2,14,0.45)), url(${assetUrl(theme.pageImage)}) center / cover`
+          : theme.pageBg,
+      }}
+    >
+      {/* Behind the content: critters must never cross the QR code */}
+      <SpookyOverlay scale={3} behind />
+
       {/* Left column: live physics demo (double-width) */}
       <div className="flex-1 flex flex-col min-h-0">
         <h2 className="text-5xl font-bold text-slate-300 mb-4 text-center">
@@ -35,26 +48,32 @@ export default function QRCodePhase({ players }: QRCodePhaseProps) {
 
       {/* Center column: title + QR + count — only as wide as it needs to be */}
       <div className="shrink-0 flex flex-col items-center justify-center gap-6 px-20">
-        <h1 className="text-[5rem] font-black text-white tracking-tight leading-none text-center">
+        <h1
+          className="text-[5rem] font-black text-white tracking-tight leading-none text-center"
+          style={{ fontFamily: theme.displayFont }}
+        >
           {t("app.nameLucky")}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+          <span className="text-transparent bg-clip-text" style={{ backgroundImage: theme.accentGradient }}>
             {t("app.nameDrop")}
           </span>
         </h1>
 
-        <div className="bg-white p-6 rounded-3xl shadow-2xl shadow-blue-500/20">
+        <div
+          className="bg-white p-6 rounded-3xl shadow-2xl shadow-blue-500/20"
+          style={theme.displayFont ? { boxShadow: `0 0 120px 10px ${theme.winnerGlow}66` } : undefined}
+        >
           {joinUrl && (
             <QRCodeSVG
               value={joinUrl}
               size={840}
               bgColor="#FFFFFF"
-              fgColor="#0F172A"
+              fgColor={theme.pageBg}
               level="H"
             />
           )}
         </div>
 
-        <p className="text-5xl font-bold text-white animate-pulse">
+        <p className="text-5xl font-bold text-white animate-pulse" style={{ fontFamily: theme.displayFont }}>
           {t("lobby.scanToJoin")}
         </p>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLang } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 import EmojiPicker from "./ColorPicker";
 import { getSocket } from "@/lib/socket";
 import { C2S, S2C } from "@/lib/socketEvents";
@@ -14,6 +15,7 @@ interface JoinFormProps {
 
 export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) {
   const { t } = useLang();
+  const theme = useTheme();
   const [name, setName] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState<EmojiId | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +109,8 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
           maxLength={8}
           placeholder={t("join.namePlaceholder")}
           autoComplete="off"
-          className="w-full px-4 py-3 text-lg rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 text-lg rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent"
+          style={{ "--tw-ring-color": theme.buttonBg } as React.CSSProperties}
         />
       </div>
 
@@ -125,7 +128,8 @@ export default function JoinForm({ onJoined, nameCheckEnabled }: JoinFormProps) 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full py-4 rounded-xl text-lg font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-xl text-lg font-bold text-white hover:brightness-110 active:brightness-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+        style={{ background: theme.buttonBg }}
       >
         {isSubmitting ? (
           <>

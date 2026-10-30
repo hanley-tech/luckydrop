@@ -9,6 +9,7 @@ No app install. No sign-up. Just scan, drop, and win.
 | Lobby | Gameplay | Final Round |
 |:---:|:---:|:---:|
 | ![Lobby](docs/screenshots/lobby.png) | ![Gameplay](docs/screenshots/gameplay.png) | ![Final Round](docs/screenshots/final-round.png) |
+| ![Halloween lobby](public/guide/en/halloween-display-lobby.jpg) | ![Halloween gameplay](public/guide/en/halloween-display-game.jpg) | ![Podium](public/guide/en/neon-display-winner.jpg) |
 
 ### Why LuckyDrop?
 
@@ -16,11 +17,13 @@ No app install. No sign-up. Just scan, drop, and win.
 - **Neon spectacle** — A glowing "Geometry Wars"-style board: animated grid, bloom pegs, per-player neon balls with motion trails, particle bursts, and star explosions in the win zone.
 - **Cinematic moments** — Automatic slow-motion with camera push-in and screen shake for the big beats: the winning drop, the first ball into the win zone, and near-misses.
 - **Real physics** — Matter.js powers the Plinko board. Every drop is different. Every round is suspenseful.
+- **Themes** — Switch the whole room between *Neon* and *Halloween* (graveyard board, jack-o'-lantern pegs, flying bats, ghosts, lightning, its own music and sounds) from the operator panel, even mid-match.
 - **Dynamic audio** — Synthesized techno sound effects (peg pings, explosions, win chimes — no files required), plus TTS announcements and background music that speeds up with a tension pulse as the field narrows to the final few.
 - **Pick your prizes** — Award 1 to 5 winners; the finish shows a ranked podium (gold/silver/bronze) plus runners-up.
 - **Multiple boards** — *Classic*, *Cannon Crossfire*, and *Lunch Tray* levels change the obstacles and the chaos.
 - **Works on any screen** — Designed for projectors and TVs at 16:9 (4K-ready). Emojis render as bundled images, so they show even on machines whose OS emoji font doesn't draw to canvas.
-- **Operator control** — Run the show from your phone. Start rounds, set the winner count and level, remove players, restart matches.
+- **Operator control** — Run the show from your phone. Start rounds, set the winner count, level, language and theme, remove players, restart matches. A built-in illustrated **operator guide** (Chinese/English) walks a new host through a whole event.
+- **Bilingual** — Simplified Chinese and English, switched for every screen at once from the operator panel.
 - **Resilient** — The display auto-reconnects after the machine sleeps or the network blips, with a live connection indicator so you always know its status.
 - **Self-hosted & free** — Run it on your own machine. No subscriptions, no vendor lock-in.
 
@@ -121,6 +124,9 @@ stateDiagram-v2
 |--------|-------------|
 | **Level** (lobby only) | Choose the board: Classic, Cannon Crossfire, or Lunch Tray |
 | **Prize winners** (lobby only) | Set how many top places to celebrate (1–5) — the podium size at the finish |
+| **Language** (any time) | 中文 / English for the big screen, every phone and the spoken announcements |
+| **Theme** (any time) | Neon / Halloween for the big screen and every phone, sounds included |
+| **📖 Operator Guide** | Opens the illustrated how-to at `/operator/guide` in a new tab |
 | **Start Game** | Begins round 1 (only available in lobby with players) |
 | **Restart Match** | Returns to lobby, keeps all players for another round (resets the soundtrack) |
 | **Reset All** | Clears everything — players, scores, game state |
@@ -132,6 +138,23 @@ The operator panel includes debug tools for testing:
 
 - **Add 5 / Add 40 Test Users** — Populates the game with fake players
 - **Name Check toggle** — Enables/disables OpenAI name moderation (requires a funded `OPENAI_API_KEY`; off by default)
+
+#### Themes
+
+Pick **Neon** (default) or **Halloween** from the operator panel. Like language, the theme is owned by the server: it restyles the big screen and every phone at once, and can change mid-match. Halloween swaps the board for a painted graveyard with jack-o'-lantern pegs, flying bats, ghosts, spiders and lightning, uses a creepy title font (English text only), and has its own music and sound effects.
+
+Themes live in `src/lib/theme.ts` (palette, art, font, sound pack). Board ambience is in `src/components/game/fx/spooky.ts`, art in `public/themes/<theme>/`, and a theme's sound pack in `public/sounds/<theme>/` under the default filenames.
+
+#### Operator Guide
+
+The operator panel links to an illustrated guide at `/operator/guide` (Chinese/English, follows the room's language). Its screenshots are generated, not hand-made. To refresh them after a UI change, start a **scratch** server (the script resets the game and runs whole matches) and run:
+
+```bash
+PORT=3418 npm run dev            # in another terminal
+node scripts/guide-shots.mjs http://localhost:3418   # add your NEXT_PUBLIC_BASE_PATH if set
+```
+
+It uses your installed Google Chrome (muted) and writes `public/guide/<lang>/*.jpg`.
 
 ### For Players
 
@@ -179,6 +202,10 @@ no files. On top of that, LuckyDrop ships a **CC0 default set** in
 `public/sounds/default/` — background music plus richer file-based SFX — so
 audio works out of the box with nothing to install. Every file is public domain
 (Kenney + OpenGameArt); see [`public/sounds/default/CREDITS.md`](public/sounds/default/CREDITS.md).
+
+Themes bring their own packs: the **Halloween** theme plays `public/sounds/halloween/`
+(public domain / CC0 / CC BY — see its [`CREDITS.md`](public/sounds/halloween/CREDITS.md)),
+which also ships in the repo. A theme pack uses the same filenames as the default set.
 
 **To use your own music/SFX instead** (e.g. tracks from a subscription library),
 drop `.mp3`s directly into `public/sounds/` and point `public/sounds/sounds.json`

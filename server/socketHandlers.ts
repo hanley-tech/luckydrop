@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { GameStateManager } from "../src/lib/gameState";
 import { C2S, S2C } from "../src/lib/socketEvents";
-import { JoinRequest, EmojiId, LevelId, Lang } from "../src/types";
+import { JoinRequest, EmojiId, LevelId, Lang, ThemeId } from "../src/types";
 
 export function setupSocketHandlers(io: Server): void {
   const gameState = new GameStateManager();
@@ -92,6 +92,13 @@ export function setupSocketHandlers(io: Server): void {
       if (!data?.lang) return;
       gameState.setLang(data.lang);
       io.emit(S2C.LANG_CHANGED, { lang: gameState.getState().lang });
+    });
+
+    // Operator sets the visual theme for every connected screen
+    socket.on(C2S.OPERATOR_SET_THEME, (data: { theme: ThemeId }) => {
+      if (!data?.theme) return;
+      gameState.setTheme(data.theme);
+      io.emit(S2C.THEME_CHANGED, { theme: gameState.getState().theme });
     });
 
     // Display reports round result
