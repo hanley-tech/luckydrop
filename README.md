@@ -4,7 +4,7 @@
 
 No app install. No sign-up. Just scan, drop, and win.
 
-**[Watch the LuckyDrop 2.0 video on YouTube](https://www.youtube.com/watch?v=9KNnFaiOVHA)** · **[Project page](https://hanley-tech.github.io/luckydrop/)**
+**[Watch the LuckyDrop 2.0 video](https://www.youtube.com/watch?v=9KNnFaiOVHA)** · **[Watch a full game (1.0)](https://youtu.be/HpCjDPk2bnw)** · **[Project page](https://hanley-tech.github.io/luckydrop/)**
 
 | Lobby | Gameplay | Final Round |
 |:---:|:---:|:---:|
